@@ -1,6 +1,7 @@
 # Heartlight: Revibed — remake implementation plan
 
-Status: **plan**, nothing implemented yet. Built on the reverse engineering in
+Status: **plan**, nothing implemented yet. Decisions confirmed (section 10): Godot 4.7, Polish by
+default, original behaviour by default, level editor in the first release. Built on the reverse engineering in
 [`reverse-engineering/`](reverse-engineering/README.md) and modelled on the
 [lazarus-revibed](https://github.com/mbialkowski/lazarus-revibed) remake (same engine, same layout,
 same kind of options), adapted to a single-screen puzzle game.
@@ -18,10 +19,12 @@ same kind of options), adapted to a single-screen puzzle game.
 
 ### 1.1 Deliberate differences (on by default)
 
-* Menus (title, pause, options, controls, level select) instead of the original's Space/Enter title.
+* Menus (title, pause, options, controls, level select, editor) instead of the original's
+  Space/Enter title.
 * Saving is automatic (the original saved solved levels per player too; we keep the three players).
-* After a solved level, go to the **next unsolved** level (the original goes to the next number).
-  Option to restore the original behaviour.
+
+After a solved level the game goes to the **next level number**, as in the original; going to the
+next unsolved level is an option, off by default.
 
 Everything else in [05-remake-guide.md §5.2](reverse-engineering/05-remake-guide.md#52-fidelity-checklist)
 stays as in the original (scan order, push only on odd ticks, plasma does not kill, explosions can
@@ -65,7 +68,7 @@ Autorzy/Credits screen and in the README.
 * **First screen** (needed in the browser to start audio): Polski / English, any key. Upright phone:
   "turn the phone sideways".
 * **Title**: logo + the original's rotating credit pages, title tune. Menu: NOWA GRA / GRAJ DALEJ
-  (continue at the last level), WYBÓR POZIOMU (level select), GRACZ (choose/rename one of 3
+  (continue at the last level), WYBÓR POZIOMU (level select), EDYTOR (level editor), GRACZ (choose/rename one of 3
   players), OPCJE, STEROWANIE, AUTORZY, WYJŚCIE.
 * **Level select**: the 70 levels as mini-maps with solved marks and authors; locked levels? No —
   the original lets you play any level (Space+←/→), keep that.
@@ -81,8 +84,8 @@ Autorzy/Credits screen and in the README.
 | Płynny ruch | tak / nie | nie | smooth movement (3) |
 | Szeroki ekran | tak / nie | tak | side panels on wide screens |
 | Pchanie | oryginalne / zawsze | oryginalne | push on odd ticks only, or on every press |
-| Po ukończeniu | następny nierozwiązany / następny | nierozwiązany | 1.1 |
-| Cofanie (undo) | tak / nie | tak | rewind moves (5) |
+| Po ukończeniu | następny / następny nierozwiązany | następny | as the original |
+| Cofanie (undo) | tak / nie | nie | rewind moves (5); off = the original |
 | Sterowanie dotykowe | auto / tak / nie | auto | |
 | Dźwięk | tak / nie | tak | greys out the rows below |
 | Muzyka | 0–100 % | 70 % | in-game music exists in the original (F6) |
@@ -99,7 +102,13 @@ F6/F7/F8 keep working in game and show the original's icons; F8 (joystick) becom
 * **Saving**: per player: solved levels, current level, settings — after every level and on exit.
   Original `PLAYERn.STT` files can be imported (format in 02-file-formats §2.11).
 * **Custom levels**: load a `LEVELS.HL` (desktop: file dialog; web: drag-and-drop / file picker),
-  parsed with the original rules and error messages. A level editor is a later milestone.
+  parsed with the original rules and error messages.
+* **Level editor** (first release): a 20×12 grid painted with the 13 objects (mouse, keyboard,
+  gamepad, touch), author line, checks with the original's errors (12 rows, a dwarf, a door, no
+  more than 199 levels), "play from here" with instant return to the editor, undo in the editor,
+  level list (add, duplicate, move, delete), saving as a standard `LEVELS.HL` (CR LF, the
+  original's legend header) so that levels also work in the original game. Web: export as a
+  download, import with the file picker; desktop: `user://levels/*.hl`.
 * **Statistics** (optional): moves and time per level, best result.
 
 ## 6. Controls
@@ -148,13 +157,13 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 | M3 | menus, options, players and saving, level select, credits, PL/EN | all screens reachable by keyboard and gamepad |
 | M4 | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
 | M5 | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
-| M6 | polish: screenshots, README, solutions collected for all 70 levels | release |
+| M6 | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
+| M7 | polish: screenshots, README, solutions collected for all 70 levels | first release |
 
-## 10. Decisions to confirm
+## 10. Decisions (confirmed)
 
-1. Godot 4.7 like lazarus-revibed (assumed above).
-2. Default language: the original is in English (menus in Polish in lazarus) — first screen asks;
-   default Polski as in lazarus?
-3. Deliberate differences in 1.1 (next *unsolved* level) and the defaults of *Pchanie*, *Płynny
-   ruch* and *Cofanie*.
-4. Level editor: in scope for the first release or later?
+1. **Godot 4.7**, like lazarus-revibed.
+2. **Polski by default**; English selectable on the first screen and in the options.
+3. **Original behaviour by default**: next level number after a solved level, push only on odd
+   ticks, no smooth movement, no undo — all of them available as options.
+4. **Level editor in the first release** (milestone M6).
