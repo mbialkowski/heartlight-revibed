@@ -14,8 +14,7 @@ func _initialize() -> void:
 					print("FAILED: ", dir.path_join(f))
 					bad += 1
 	for f in ["game.json", "palette.json", "levels.json", "LEVELS.HL", "golden_traces.json",
-			"sprites.png", "sprites_mini.png", "font.png", "logo.png", "chaos.png", "snd_rock.wav",
-			"music_a.wav"]:
+			"sprites.png", "sprites_mini.png", "font.png", "logo.png", "chaos.png", "sounds.bin"]:
 		if not FileAccess.file_exists("res://data/" + f):
 			print("MISSING: res://data/" + f)
 			bad += 1

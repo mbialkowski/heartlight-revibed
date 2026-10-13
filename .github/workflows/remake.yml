@@ -52,3 +52,9 @@ jobs:
           godot --headless --path remake --script res://tests/check.gd
           godot --headless --path remake --script res://tests/rules.gd
           godot --headless --path remake --script res://tests/golden.gd
+
+      - name: Rendering matches the original's screenshot pixel for pixel
+        run: |
+          mkdir -p /tmp/render
+          godot --headless --path remake --script res://tests/render_dump.gd -- /tmp/render
+          python3 tools/compare_render.py /tmp/render/level01.png docs/images/original/05_level01.png --ignore-hearts 1

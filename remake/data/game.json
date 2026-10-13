@@ -34,20 +34,158 @@
  "tick_seconds": 0.11263998283581214,
  "sample_rate": 8522.728571428572,
  "sounds": {
-  "title": "title-screen tune (looped)",
-  "colect": "dwarf collects a heart",
-  "colected": "last heart collected: the door starts to open",
-  "door": "dwarf enters the open door",
-  "expl": "explosion (bomb, or dwarf killed)",
+  "!a": [
+   0,
+   16939
+  ],
+  "!b": [
+   16939,
+   16939
+  ],
+  "!c": [
+   33878,
+   16939
+  ],
+  "!d": [
+   50817,
+   16939
+  ],
+  "!e": [
+   67756,
+   16939
+  ],
+  "!f": [
+   84695,
+   16939
+  ],
+  "!g": [
+   101634,
+   16939
+  ],
+  "!h": [
+   118573,
+   16939
+  ],
+  "!i": [
+   135512,
+   16939
+  ],
+  "!j": [
+   152451,
+   16939
+  ],
+  "!k": [
+   169390,
+   16939
+  ],
+  "!l": [
+   186329,
+   16939
+  ],
+  "!m": [
+   203268,
+   16939
+  ],
+  "!n": [
+   220207,
+   16939
+  ],
+  "!o": [
+   237146,
+   16939
+  ],
+  "!p": [
+   254085,
+   16939
+  ],
+  "!q": [
+   271024,
+   16939
+  ],
+  "!r": [
+   287963,
+   16939
+  ],
+  "!s": [
+   304902,
+   16939
+  ],
+  "!t": [
+   321841,
+   16939
+  ],
+  "title": [
+   338780,
+   16939
+  ],
+  "colect": [
+   355719,
+   5582
+  ],
+  "colected": [
+   361301,
+   9237
+  ],
+  "door": [
+   370538,
+   22763
+  ],
+  "expl": [
+   393301,
+   5505
+  ],
+  "heart0": [
+   398806,
+   466
+  ],
+  "heart1": [
+   399272,
+   466
+  ],
+  "heart2": [
+   399738,
+   466
+  ],
+  "heart3": [
+   400204,
+   464
+  ],
+  "rock": [
+   400668,
+   1231
+  ],
+  "tunnel": [
+   401899,
+   11698
+  ],
+  "key": [
+   413597,
+   393
+  ],
+  "rocgrass": [
+   413990,
+   307
+  ],
+  "hrtgrass": [
+   414297,
+   203
+  ]
+ },
+ "sound_use": {
+  "rock": "rock lands (not on grass)",
+  "rocgrass": "rock or bomb lands on grass",
   "heart0": "heart lands (not on grass), one of four at random",
   "heart1": "heart lands (not on grass), one of four at random",
   "heart2": "heart lands (not on grass), one of four at random",
   "heart3": "heart lands (not on grass), one of four at random",
-  "rock": "rock lands (not on grass)",
+  "hrtgrass": "heart lands on grass",
+  "colect": "dwarf collects a heart",
+  "colected": "last heart collected: the door starts to open",
+  "door": "dwarf enters the open door",
   "tunnel": "dwarf enters a tunnel",
+  "expl": "explosion (bomb, or dwarf killed)",
   "key": "F6/F7/F8 option toggled",
-  "rocgrass": "rock or bomb lands on grass",
-  "hrtgrass": "heart lands on grass"
+  "title": "title-screen tune (looped)"
  },
  "music_sequence": "lllljjjkababdedemnmnghgissssttttaaabeeefopopghghmnmnghghscstscstcacbcdceqrqrhhhhjkjkghgisbsbsbstaeaendndncncnnnfsbsjsbskstststsiadadbdbfrqrqhghgopophghistscstscabdeabdfotothhhisssjssskstskstsc.",
  "font_chars": {

@@ -14,15 +14,14 @@ so the remake can colour them with a palette shader (fades, VGA mono) exactly li
   sprites_mini.png   the 8x8 overview versions, 8 x 8 cells
   font.png           font.ggs: 16 x 4 cells of 16x24 (three colours stacked)
   logo.png chaos.png pictures
-  snd_<name>.wav     effects and title tune, 8-bit 8523 Hz
-  music_<x>.wav      the 20 in-game music blocks
+  sounds.bin         all samples (effects, title tune, music blocks "!a".."!t"), raw signed
+                     8-bit at 8523 Hz; index in game.json "sounds"
 """
 import argparse
 import json
 import os
 import shutil
 import sys
-import wave
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image  # noqa: E402
@@ -58,14 +57,6 @@ def picture(sprites, cols, rows):
     return out
 
 
-def save_wav(path, data):
-    with wave.open(path, 'wb') as w:
-        w.setnchannels(1)
-        w.setsampwidth(1)
-        w.setframerate(int(round(SAMPLE_RATE)))
-        w.writeframes(data)
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('game_dir')
@@ -92,16 +83,17 @@ def main():
                    mono=[mono_palette(pal6)[3 * i:3 * i + 3] for i in range(256)]),
               open(os.path.join(out, 'palette.json'), 'w'))
 
+    # all samples in one raw file as signed 8-bit (the original's unsigned bytes XOR 0x80, the
+    # format Godot's AudioStreamWAV wants); game.json "sounds" = name -> [offset, length]
     sounds = {}
+    blob = bytearray()
     for e in vol.entries:
         n = e['name']
         if n.endswith('.snd'):
-            base = n[:-4]
-            if base.startswith('!'):
-                save_wav(os.path.join(out, f'music_{base[1:]}.wav'), vol.read(n))
-            else:
-                save_wav(os.path.join(out, f'snd_{base}.wav'), vol.read(n))
-                sounds[base] = SOUND_USE.get(base)
+            data = vol.read(n)
+            sounds[n[:-4]] = [len(blob), len(data)]
+            blob += bytes(b ^ 0x80 for b in data)
+    open(os.path.join(out, 'sounds.bin'), 'wb').write(bytes(blob))
 
     levels = load_levels(os.path.join(a.game_dir, 'LEVELS.HL'))
     json.dump([dict(author=lv.author or '', rows=lv.rows) for lv in levels],
@@ -114,6 +106,7 @@ def main():
         tick_seconds=960 / SAMPLE_RATE,
         sample_rate=SAMPLE_RATE,
         sounds=sounds,
+        sound_use=SOUND_USE,
         music_sequence=mz.cstr(DGROUP, MUSIC_SEQ_OFF).decode('ascii'),
         font_chars={c: i for c, i in FONT_CHARS.items()},
         font_polish=FONT_POLISH,
