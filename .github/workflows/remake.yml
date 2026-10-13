@@ -1,5 +1,6 @@
-# Tests the Godot remake. (The web export and GitHub Pages deployment arrive with milestone M4.)
-name: Remake tests
+# Tests the Godot remake, exports the web build and (from main) publishes it on GitHub Pages.
+# One-time setup for publishing: Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+name: Remake
 
 on:
   push:
@@ -10,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: remake-${{ github.ref }}
@@ -19,7 +22,7 @@ env:
   GODOT_VERSION: "4.7.2"
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,20 +37,25 @@ jobs:
           python3 tests/test_sim.py
           python3 tools/build_remake_data.py original/ /tmp/data
           python3 tools/make_golden_traces.py original/LEVELS.HL tests/golden_scenarios.json /tmp/data/golden_traces.json
-          for f in /tmp/data/*.json /tmp/data/LEVELS.HL; do cmp "$f" "remake/data/$(basename "$f")"; done
+          for f in /tmp/data/*.json /tmp/data/LEVELS.HL /tmp/data/sounds.bin; do cmp "$f" "remake/data/$(basename "$f")"; done
 
-      - name: Install Godot
+      - name: Install Godot and the web export templates
         run: |
           base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
           curl -sSLo godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
-          rm godot.zip
+          curl -sSLo templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j templates.tpz templates/version.txt templates/web_nothreads_release.zip \
+            templates/web_nothreads_debug.zip -d "$dest"
+          rm godot.zip templates.tpz
 
       - name: Import the project
         run: godot --headless --path remake --import || true
 
-      - name: Godot tests (scripts, rules, golden traces)
+      - name: Godot tests (scripts, rules, golden traces, scenarios)
         run: |
           godot --headless --path remake --script res://tests/check.gd
           godot --headless --path remake --script res://tests/rules.gd
@@ -59,3 +67,36 @@ jobs:
           mkdir -p /tmp/render
           godot --headless --path remake --script res://tests/render_dump.gd -- /tmp/render
           python3 tools/compare_render.py /tmp/render/level01.png docs/images/original/05_level01.png --ignore-hearts 1
+
+      - name: Export the web build
+        run: |
+          mkdir -p remake/build/web && touch remake/build/.gdignore
+          godot --headless --path remake --export-release Web "$GITHUB_WORKSPACE/remake/build/web/index.html"
+          test -s remake/build/web/index.wasm
+
+      - name: Web smoke test (headless Chromium, desktop and phone)
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node remake/tests/web_smoke.mjs remake/build/web /tmp/web-shots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-shots
+          path: /tmp/web-shots
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: remake/build/web
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

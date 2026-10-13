@@ -18,6 +18,7 @@ const AudioScript = preload("res://scripts/game/audio.gd")
 const Settings = preload("res://scripts/game/settings.gd")
 const Progress = preload("res://scripts/game/progress.gd")
 const S = preload("res://scripts/game/strings.gd")
+const TouchScript = preload("res://scripts/view/touch.gd")
 
 const SLIDE_STEP := 16              # pixels per vertical retrace (NextLevelScroll 1633:14A3)
 const RETRACE := 1.0 / 70.0
@@ -31,7 +32,8 @@ const OPTION_PAGES := {
 	"page_sound": ["sound", "music_on", "music", "fx", "overlap"],
 	"page_controls": [],
 }
-const KEYS_PER_TICK := ["left", "right", "up", "down", "restart", "undo", "prev_level", "next_level"]
+const KEYS_PER_TICK := ["left", "right", "up", "down", "restart", "undo", "prev_level", "next_level",
+		"overview", "music", "sound", "gamepad"]
 
 var settings := Settings.new()
 var progress := Progress.new()
@@ -44,6 +46,8 @@ var overlay: TextureRect
 var base_mat: ShaderMaterial
 var over_mat: ShaderMaterial
 var display_rect := Rect2()
+var touch
+var portrait := false
 
 var mode := "boot"
 var items := []                     # menu rows: {label, value, enabled, act, left, right}
@@ -99,6 +103,9 @@ func _ready() -> void:
 	over_mat = _material(text.texture, Vector2(640, 400))
 	display = _rect(base_mat, screen.texture)
 	overlay = _rect(over_mat, text.texture)
+	touch = TouchScript.new()
+	touch.main = self
+	add_child(touch)
 	get_viewport().size_changed.connect(_layout)
 	apply_settings()
 	var start_level := -1
@@ -142,14 +149,33 @@ func _rect(mat: ShaderMaterial, tex: Texture2D) -> TextureRect:
 func _layout() -> void:
 	"""the 320x200 picture at the 4:3 shape of a VGA monitor (pixels 1.2 times taller), centred"""
 	var win := get_viewport_rect().size
+	portrait = win.y > win.x
 	var scale := minf(win.x / 320.0, win.y / 240.0)
 	var size := Vector2(320.0 * scale, 240.0 * scale).floor()
 	display_rect = Rect2(((win - size) / 2.0).floor(), size)
+	if portrait and touch != null and touch.wanted():
+		display_rect.position.y = 0.0               # the touch controls go below the picture
 	for r in [display, overlay]:
 		r.position = display_rect.position
 		r.size = display_rect.size
 	base_mat.set_shader_parameter("out_scale", Vector2(size.x / 320.0, size.y / 200.0))
 	over_mat.set_shader_parameter("out_scale", Vector2(size.x / 640.0, size.y / 400.0))
+	if touch != null:
+		touch.relayout()                            # anchored to the full window
+
+
+func can_fullscreen() -> bool:
+	return not OS.has_feature("web_ios") and DisplayServer.get_name() != "headless"
+
+
+func is_fullscreen() -> bool:
+	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+
+
+func toggle_fullscreen() -> void:
+	settings.set_value("fullscreen", not is_fullscreen())
+	apply_settings()
+	settings.save_file()
 
 
 func to_text_coords(p: Vector2) -> Vector2:
@@ -172,12 +198,13 @@ func apply_settings() -> void:
 	if not audio.sound_on:
 		audio.stop_all()
 	settings.apply_input_map()
-	if not OS.has_feature("web") and DisplayServer.get_name() != "headless":
+	if can_fullscreen():
 		var full: bool = settings.get_value("fullscreen")
-		var is_full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		if full != is_full:
+		if full != is_fullscreen():
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if full
 					else DisplayServer.WINDOW_MODE_WINDOWED)
+	if touch != null:
+		_layout()
 	tick_s = float(Data.game["tick_seconds"]) * 100.0 / float(settings.get_value("speed"))
 
 
@@ -200,14 +227,14 @@ func _input(event: InputEvent) -> void:
 		_rebind_pad(event)
 		return
 	if event.is_action_pressed("fullscreen") and mode != "rename":
-		settings.set_value("fullscreen", not settings.get_value("fullscreen"))
-		apply_settings()
-		settings.save_file()
+		toggle_fullscreen()
 		return
 	if mode == "play":
 		for a in KEYS_PER_TICK:
 			if event.is_action_pressed(a, false, true):
 				latched[a] = true
+		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F10:
+			latched["quit"] = true
 		if event.is_action_pressed("pause"):
 			open_pause()
 		return
@@ -478,7 +505,7 @@ func open_options(from: String) -> void:
 			"left": func(): _change_option(opt, -1), "right": func(): _change_option(opt, 1),
 			"act": func(): _change_option(opt, 1),
 			"enabled": not (opt in ["music_on", "music", "fx", "overlap"] and not settings.get_value("sound"))
-					and not (opt == "fullscreen" and OS.has_feature("web"))})
+					and not (opt == "fullscreen" and not can_fullscreen())})
 	if keys[page] == "page_controls":
 		its.append({"label": t("open_controls"), "act": func(): open_controls("options")})
 	its.append({"label": t("back"), "act": _back})
@@ -955,6 +982,9 @@ func start_level(i: int) -> void:
 
 func _process(delta: float) -> void:
 	palette.update(delta)
+	if touch.visible != (touch.wanted() and mode == "play"):
+		touch.refresh()
+		_layout()
 	if notice_t > 0.0:
 		notice_t -= delta
 		if notice_t <= 0.0 and mode != "play":
@@ -1000,18 +1030,19 @@ func _take(a: String) -> bool:
 
 
 func game_tick() -> void:
-	if Input.is_action_just_pressed("music"):
+	# keys are latched between ticks (a press between two ticks is never lost)
+	if _take("music"):
 		settings.set_value("music_on", not settings.get_value("music_on"))
 		_option_toggled()
-	if Input.is_action_just_pressed("sound"):
+	if _take("sound"):
 		settings.set_value("sound", not settings.get_value("sound"))
 		_option_toggled()
-	if Input.is_action_just_pressed("gamepad"):
+	if _take("gamepad"):
 		settings.set_value("gamepad", not settings.get_value("gamepad"))
 		_option_toggled()
-	if Input.is_action_just_pressed("overview"):
+	if _take("overview"):
 		overview = not overview
-	if Input.is_key_pressed(KEY_F10):
+	if _take("quit"):
 		save_all()
 		open_title()
 		return
