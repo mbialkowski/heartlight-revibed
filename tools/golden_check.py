@@ -249,6 +249,20 @@ def which_level(cap, statics):
     return best
 
 
+def wait_for_start(box, reader, lv, timeout=60):
+    """after Esc the dwarf explodes, which can set off bombs or rocks for a long time; wait
+    until the level has really restarted (the screen shows its starting layout)"""
+    start = norm_sim(Sim(lv.rows, lv.index, BorlandRand(1)))
+    time.sleep(1.5)
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        cap = norm_screen(reader.read(box.shot()))
+        if all(c is None or c[0] == st[0] for rc, rs in zip(cap, start) for c, st in zip(rc, rs)):
+            return True             # same objects everywhere (frames still animate)
+        time.sleep(0.2)
+    return False
+
+
 def goto_level(box, reader, statics, n, cur):
     for _ in range(80):
         cap = norm_screen(reader.read(box.shot()))
@@ -291,7 +305,7 @@ def main():
         for n in range(lo, hi + 1):
             cur = goto_level(box, reader, statics, n, cur)
             box.key('Escape')                 # restart it: a clean start for the check
-            time.sleep(3.5)
+            wait_for_start(box, reader, levels[n - 1])
             moves = script.get(str(n), '')
             ok, detail = check_level(box, reader, levels, n, moves)
             report[n] = dict(ok=ok, moves=moves, detail=detail)
