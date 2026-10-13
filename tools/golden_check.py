@@ -176,6 +176,7 @@ def apply_move(cands, m, max_wait=12):
     for sim in cands:
         s = copy.deepcopy(sim)
         for _ in range(max_wait):
+            s.restart_if_over()
             t = copy.deepcopy(s)
             t.tick(DIRS.get(m, 0), m == 'E')
             out.setdefault(key_of(t), t)
