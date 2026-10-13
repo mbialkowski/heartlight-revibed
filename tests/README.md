@@ -2,7 +2,7 @@
 
 * `golden_scenarios.json` — per level, the 16 moves played by `tools/golden_check.py`
   (generated with `tools/make_scenarios.py`, seed 1994).
-* `golden_report.json` — the result of the last run against the original in DOSBox.
+* `golden_report.json` — the result against the original in DOSBox: 70/70 levels.
 * `test_sim.py` — fast checks of `tools/hl_sim.py` that need no emulator (`python3 -m pytest tests`
   or `python3 tests/test_sim.py`).
 

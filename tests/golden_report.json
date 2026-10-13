@@ -1,0 +1,488 @@
+{
+ "summary": "70/70 levels match the original (idle start + 16-move scenario each)",
+ "levels": {
+  "1": {
+   "ok": true,
+   "moves": "UDLRURRDRDRLLLLL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "2": {
+   "ok": true,
+   "moves": "RRDLLDLDDDRDRUUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "3": {
+   "ok": true,
+   "moves": "ULLLLDDLLDURRLRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "4": {
+   "ok": true,
+   "moves": "DUUURULDUUDLULLL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "5": {
+   "ok": true,
+   "moves": "DRULUUDRRRRULDLD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "6": {
+   "ok": true,
+   "moves": "RDUDUUURRLLLDURD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "7": {
+   "ok": true,
+   "moves": "DDDLLDULRUUUURUD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "8": {
+   "ok": true,
+   "moves": "DULDLRDLRDULRRDD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "9": {
+   "ok": true,
+   "moves": "URUUURUDRUDLULUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "10": {
+   "ok": true,
+   "moves": "RRUDRRRRRLLDLURL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "11": {
+   "ok": true,
+   "moves": "DRRLUUDRLURDRDUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "12": {
+   "ok": true,
+   "moves": "RLRLLDDLDDDRDDDL",
+   "detail": {
+    "candidates": 4
+   }
+  },
+  "13": {
+   "ok": true,
+   "moves": "URDRLDDRUDRRULUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "14": {
+   "ok": true,
+   "moves": "RLDRRRUUURRLRRRR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "15": {
+   "ok": true,
+   "moves": "URURRRLRLUDRLRUL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "16": {
+   "ok": true,
+   "moves": "DDURURRURURULRRD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "17": {
+   "ok": true,
+   "moves": "DDUULRDRRDDDLDRL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "18": {
+   "ok": true,
+   "moves": "DDUDUDURRRRDDLDL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "19": {
+   "ok": true,
+   "moves": "LLUUDRLRUDLRURRR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "20": {
+   "ok": true,
+   "moves": "UDLLLDDULDLLLDUR",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "21": {
+   "ok": true,
+   "moves": "RRURUURRDDUDDDRD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "22": {
+   "ok": true,
+   "moves": "URDDUURURRLDRDUL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "23": {
+   "ok": true,
+   "moves": "RRLLRULLRUUURDRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "24": {
+   "ok": true,
+   "moves": "UDRRDDDLRDDUUURU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "25": {
+   "ok": true,
+   "moves": "LLDLDULDLUULDDUL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "26": {
+   "ok": true,
+   "moves": "DDDRULUDUDDDUDDR",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "27": {
+   "ok": true,
+   "moves": "DDLDDUDLRUUDLLLL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "28": {
+   "ok": true,
+   "moves": "RUUUDLDRUDURURRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "29": {
+   "ok": true,
+   "moves": "UUDRDRRLDURLDRRL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "30": {
+   "ok": true,
+   "moves": "RULRRUDRURUDURDL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "31": {
+   "ok": true,
+   "moves": "RRDRRURRRRDUDRDD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "32": {
+   "ok": true,
+   "moves": "RRRDRLRUUURDRUUL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "33": {
+   "ok": true,
+   "moves": "LRUDDUULRDRRUDUR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "34": {
+   "ok": true,
+   "moves": "UUULURRDUDRDRDUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "35": {
+   "ok": true,
+   "moves": "LURDRULULDURDLUR",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "36": {
+   "ok": true,
+   "moves": "URURULLLRLDRRDDD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "37": {
+   "ok": true,
+   "moves": "RLLLDUDDUURULLDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "38": {
+   "ok": true,
+   "moves": "RUULLURRDLUUDUUL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "39": {
+   "ok": true,
+   "moves": "RRDRUDDUUURUUDDL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "40": {
+   "ok": true,
+   "moves": "DLLRLLLUDRDLLDDD",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "41": {
+   "ok": true,
+   "moves": "LDRDULLDDDURRULR",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "42": {
+   "ok": true,
+   "moves": "DURUULURUUUURDRL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "43": {
+   "ok": true,
+   "moves": "RRULDDRDURLDDRDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "44": {
+   "ok": true,
+   "moves": "DLRURRDUDULUUDRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "45": {
+   "ok": true,
+   "moves": "DLDLLDDDUUUURULL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "46": {
+   "ok": true,
+   "moves": "LRRRLRRDLRUUURUD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "47": {
+   "ok": true,
+   "moves": "LRURRLRRUUDURLLR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "48": {
+   "ok": true,
+   "moves": "DDDDRRLLULLRLLDU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "49": {
+   "ok": true,
+   "moves": "LRRLLRDULDLDRLUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "50": {
+   "ok": true,
+   "moves": "URRRLRURDRLURRDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "51": {
+   "ok": true,
+   "moves": "RURUULDRUDLRDRUR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "52": {
+   "ok": true,
+   "moves": "DLLRLULLRRUDDUDL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "53": {
+   "ok": true,
+   "moves": "DRLRDRRDRRDDLDRR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "54": {
+   "ok": true,
+   "moves": "URRRRLRLUUULURLL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "55": {
+   "ok": true,
+   "moves": "RUDDDDLDDLULRUUD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "56": {
+   "ok": true,
+   "moves": "LDLDURDDUDULRLDL",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  },
+  "57": {
+   "ok": true,
+   "moves": "RRDLDRRUUDRRDDRD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "58": {
+   "ok": true,
+   "moves": "LLLRLDLLRDLLDLDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "59": {
+   "ok": true,
+   "moves": "DLDLLDULULRUUDUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "60": {
+   "ok": true,
+   "moves": "RUURDRRRURRDUDUR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "61": {
+   "ok": true,
+   "moves": "LRDLLLRLUUDLDRRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "62": {
+   "ok": true,
+   "moves": "LRUURLULUDLLDRDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "63": {
+   "ok": true,
+   "moves": "LUURDDULRURRLRDU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "64": {
+   "ok": true,
+   "moves": "LLULRRLDLRRLDUUU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "65": {
+   "ok": true,
+   "moves": "RULDDUULULDLDRDR",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "66": {
+   "ok": true,
+   "moves": "DRURRRLULLLUDULL",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "67": {
+   "ok": true,
+   "moves": "URDLDURUDULLRLDU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "68": {
+   "ok": true,
+   "moves": "DLDRLRDLRDULLRRU",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "69": {
+   "ok": true,
+   "moves": "DDLLLLLUUDLUUDLD",
+   "detail": {
+    "candidates": 2
+   }
+  },
+  "70": {
+   "ok": true,
+   "moves": "RDRRUDURUUDDLURL",
+   "detail": null,
+   "note": "failed in the parallel full run (harness: late key-up under load / restart drawn before its first tick); passed when re-run alone after the harness fixes"
+  }
+ }
+}

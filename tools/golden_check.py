@@ -162,7 +162,9 @@ def advance_to(cands, cap, max_ticks=80, limit=300):
                 k = key_of(s)
                 if k not in out:
                     out[k] = copy.deepcopy(s)
-            if not s.level_running() and not s.restart_if_over():
+            if not s.level_running():
+                if s.restart_if_over():
+                    continue        # the restarted level is drawn before its first tick
                 break
             s.tick()
             if len(out) >= limit:

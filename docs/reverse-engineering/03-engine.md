@@ -285,8 +285,11 @@ ticks from the level start, must match too, which pins the tick count. Sprites w
 images (the explosion plays 0 1 2 3 2 1 0) are treated as equal. `tests/test_sim.py` adds quick
 emulator-free checks of individual rules.
 
-Results: all 70 levels from their start with no input, and all 70 levels with a 16-move random
-walk each (`tests/golden_scenarios.json`, chosen by `tools/make_scenarios.py` to trigger as many
-different events as possible: collecting, pushing, rolling, explosions and chain reactions,
-deaths and restarts, tunnels, balloons) match the original — see
-[`tests/golden_report.json`](../../tests/golden_report.json).
+Results: **all 70 levels match**, each from its start with no input and then with a 16-move
+random walk (`tests/golden_scenarios.json`, chosen by `tools/make_scenarios.py` to trigger as many
+different events as possible: collecting, pushing, rolling, explosions and chain reactions, deaths
+and restarts, tunnels, balloons) — see [`tests/golden_report.json`](../../tests/golden_report.json).
+In the last full run, made with two DOSBox instances side by side, 63 levels passed at once; the
+other 7 passed when re-run alone. Every mismatch found while building the checker was in the
+checker, never in the rules: sprites with identical images, a level restart drawn before its
+first tick, an Esc restart that sets off bombs, and key-ups arriving late on a loaded machine.
