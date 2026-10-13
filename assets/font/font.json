@@ -1,0 +1,227 @@
+{
+ "glyph_size": [
+  16,
+  8
+ ],
+ "colours": [
+  "yellow",
+  "green",
+  "blue"
+ ],
+ "columns": 16,
+ "note": "index = FontIndex(char) (17CF:000B); capitals stand for Polish letters; \"(\" heart icon, \")\" solved-level icon, \"+\"/\"-\" option on/off, \"&\" copyright sign, \"I\" text cursor. Other characters are not drawn.",
+ "chars": {
+  "a": {
+   "index": 0,
+   "glyph": "a"
+  },
+  "b": {
+   "index": 1,
+   "glyph": "b"
+  },
+  "c": {
+   "index": 2,
+   "glyph": "c"
+  },
+  "d": {
+   "index": 3,
+   "glyph": "d"
+  },
+  "e": {
+   "index": 4,
+   "glyph": "e"
+  },
+  "f": {
+   "index": 5,
+   "glyph": "f"
+  },
+  "g": {
+   "index": 6,
+   "glyph": "g"
+  },
+  "h": {
+   "index": 7,
+   "glyph": "h"
+  },
+  "i": {
+   "index": 8,
+   "glyph": "i"
+  },
+  "j": {
+   "index": 9,
+   "glyph": "j"
+  },
+  "k": {
+   "index": 10,
+   "glyph": "k"
+  },
+  "l": {
+   "index": 11,
+   "glyph": "l"
+  },
+  "m": {
+   "index": 12,
+   "glyph": "m"
+  },
+  "n": {
+   "index": 13,
+   "glyph": "n"
+  },
+  "o": {
+   "index": 14,
+   "glyph": "o"
+  },
+  "p": {
+   "index": 15,
+   "glyph": "p"
+  },
+  "q": {
+   "index": 16,
+   "glyph": "q"
+  },
+  "r": {
+   "index": 17,
+   "glyph": "r"
+  },
+  "s": {
+   "index": 18,
+   "glyph": "s"
+  },
+  "t": {
+   "index": 19,
+   "glyph": "t"
+  },
+  "u": {
+   "index": 20,
+   "glyph": "u"
+  },
+  "v": {
+   "index": 21,
+   "glyph": "v"
+  },
+  "w": {
+   "index": 22,
+   "glyph": "w"
+  },
+  "x": {
+   "index": 23,
+   "glyph": "x"
+  },
+  "y": {
+   "index": 24,
+   "glyph": "y"
+  },
+  "z": {
+   "index": 25,
+   "glyph": "z"
+  },
+  "A": {
+   "index": 26,
+   "glyph": "Ą"
+  },
+  "C": {
+   "index": 27,
+   "glyph": "Ć"
+  },
+  "E": {
+   "index": 28,
+   "glyph": "Ę"
+  },
+  "L": {
+   "index": 29,
+   "glyph": "Ł"
+  },
+  "N": {
+   "index": 30,
+   "glyph": "Ń"
+  },
+  "O": {
+   "index": 31,
+   "glyph": "Ó"
+  },
+  "S": {
+   "index": 32,
+   "glyph": "Ś"
+  },
+  "Z": {
+   "index": 33,
+   "glyph": "Ż"
+  },
+  "0": {
+   "index": 34,
+   "glyph": "0"
+  },
+  "1": {
+   "index": 35,
+   "glyph": "1"
+  },
+  "2": {
+   "index": 36,
+   "glyph": "2"
+  },
+  "3": {
+   "index": 37,
+   "glyph": "3"
+  },
+  "4": {
+   "index": 38,
+   "glyph": "4"
+  },
+  "5": {
+   "index": 39,
+   "glyph": "5"
+  },
+  "6": {
+   "index": 40,
+   "glyph": "6"
+  },
+  "7": {
+   "index": 41,
+   "glyph": "7"
+  },
+  "8": {
+   "index": 42,
+   "glyph": "8"
+  },
+  "9": {
+   "index": 43,
+   "glyph": "9"
+  },
+  ":": {
+   "index": 44,
+   "glyph": ":"
+  },
+  ".": {
+   "index": 45,
+   "glyph": "."
+  },
+  "&": {
+   "index": 46,
+   "glyph": "&"
+  },
+  " ": {
+   "index": 47,
+   "glyph": " "
+  },
+  "(": {
+   "index": 48,
+   "glyph": "("
+  },
+  ")": {
+   "index": 49,
+   "glyph": ")"
+  },
+  "+": {
+   "index": 50,
+   "glyph": "+"
+  },
+  "-": {
+   "index": 51,
+   "glyph": "-"
+  },
+  "I": {
+   "index": 52,
+   "glyph": "I"
+  }
+ }
+}

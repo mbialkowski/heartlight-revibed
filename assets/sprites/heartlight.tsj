@@ -1,0 +1,709 @@
+{
+ "type": "tileset",
+ "version": "1.10",
+ "name": "heartlight",
+ "image": "hl_sheet.png",
+ "imagewidth": 128,
+ "imageheight": 128,
+ "tilewidth": 16,
+ "tileheight": 16,
+ "columns": 8,
+ "tilecount": 64,
+ "margin": 0,
+ "spacing": 0,
+ "tiles": [
+  {
+   "id": 0,
+   "type": "empty",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 1,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "type": "heart",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "grass",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "type": "rock",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 11,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 14,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "type": "explosion",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 6
+    }
+   ]
+  },
+  {
+   "id": 16,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 18,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 19,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 6
+    }
+   ]
+  },
+  {
+   "id": 23,
+   "type": "dwarf",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 7
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "type": "door",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "type": "door",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 26,
+   "type": "door",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "type": "door",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "type": "balloon",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 29,
+   "type": "balloon",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 30,
+   "type": "balloon",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 31,
+   "type": "balloon",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 32,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 33,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 34,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 35,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 36,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 6
+    }
+   ]
+  },
+  {
+   "id": 39,
+   "type": "plasma",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 7
+    }
+   ]
+  },
+  {
+   "id": 40,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 43,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 44,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 46,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 6
+    }
+   ]
+  },
+  {
+   "id": 47,
+   "type": "tunnel_left",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 7
+    }
+   ]
+  },
+  {
+   "id": 48,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 49,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 50,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 51,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 52,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": 53,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": 54,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 6
+    }
+   ]
+  },
+  {
+   "id": 55,
+   "type": "tunnel_right",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 7
+    }
+   ]
+  },
+  {
+   "id": 56,
+   "type": "brick",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 57,
+   "type": "brick",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": 58,
+   "type": "brick",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": 59,
+   "type": "brick",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": 60,
+   "type": "metal",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 61,
+   "type": "bomb",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": 62,
+   "type": "bomb",
+   "properties": [
+    {
+     "name": "frame",
+     "type": "int",
+     "value": 1
+    }
+   ]
+  }
+ ]
+}

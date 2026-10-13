@@ -1,0 +1,100 @@
+# Recovered names for HL.EXE (load segment 0x1000; DGROUP = 214D).
+# format: SEG:OFF name   # comment
+1000:0000 _start                    # Borland C++ 3.x startup (c0l)
+1393:0031 ParseOptions              # CONFIG.DTA / command-line letters
+1393:016D ReadConfig                # reads CONFIG.DTA, then argv
+1393:022C WriteConfig
+1393:0281 LoadSprites               # hl.ggs -> sprite sheet, builds g_spriteBase[type]
+1393:06B2 ResetProgress             # LEVELS.HL changed: forget solved levels
+1393:0736 DefaultPlayer
+1393:0860 LoadPlayer                # player?.stt, XOR + checksum
+1393:0A07 SavePlayer
+1393:0AFE LoadPlayers
+1393:0B4A SavePlayers
+1393:0B71 BuildSampleChain          # music sequence string -> chained sample list
+1393:0DD5 LoadSounds                # *.snd from the volume
+1393:17C7 MusicOnOff                # in-game music (g_player.music)
+1393:17EA TitleMusicOnOff
+1393:180D ShowChaosLogo             # chaos.ggs intro picture
+1393:1942 KeyHook                   # called from the keyboard ISR
+1393:199A InitKeyboard
+1393:19C5 PrintTextFile
+1393:1A37 Init                      # vectors, memory, config, drivers, sprites, sounds
+1393:1F91 FatalError
+1393:21CF main                      # 286 check, Init, title/game loop
+1393:2245 ExitScramble              # restores vectors, scrambles its own code, exits
+15BE:000B LevelAnalysisProgress     # "Analysing file" window callback
+15BE:033B LoadLevels                # parses LEVELS.HL (via 1914:0004)
+15BE:04F9 SetupLevel                # current level -> g_type/g_state/g_frame
+1633:0006 InitGameScreen
+1633:00C0 Hero_Think                # type 8
+1633:04AB Tunnel_Think              # types 12/13
+1633:05B5 Gravity                   # shared fall/roll logic, returns 1 on landing
+1633:07A7 Rock_Think                # type 4
+1633:0824 Heart_Think               # type 5
+1633:098D Bomb_Think                # type 6
+1633:0AE5 Balloon_Think             # type 10
+1633:0BAF Door_Think                # type 9
+1633:0C08 Explosion_Think           # type 1
+1633:0C37 Plasma_Think              # type 11
+1633:0C4D GameTick                  # input + one scan of the grid
+1633:0FD4 DrawOptionIcons           # music/sound/F8 icons top-left
+1633:10DE DrawMap16                 # normal 16x16 view
+1633:115B DrawMap8                  # F1 overview (8x8 tiles)
+1633:11D8 DrawFrame                 # map + status bar, page flip
+1633:14A3 NextLevelScroll
+1633:1600 PrevLevelScroll
+1633:1766 ChangeLevel
+1633:1777 PlayGame                  # level loop
+17CF:000B FontIndex                 # char -> font.ggs sprite index
+17CF:0B7D QuitPrompt                # "press y to quit"
+17CF:0DB2 PlayerSelect
+17CF:1311 TitleMenu
+1914:0004 ParseLevelFile
+1914:0270 UnpackLevel
+1914:02FD LevelCell                 # (x, y) -> level char
+1914:038B ReadLine
+1914:03CE ParseLevel                # one {...} block
+1914:0609 PackLevel                 # nibble LZ, row- or column-major
+1914:08F5 UnpackLevelData
+19B3:044C SelectSoundDriver
+1BAC:0009 FarAlloc
+1BE2:0210 SaveScreenshot            # Alt+Ctrl+F12 -> pic%02d.bmp
+1C85:0001 FadePalette
+1C85:016F LoadGGS                   # GGE sprite file reader
+1CE9:0022 SetPalette
+1CE9:004B SetPaletteMono            # 'VGA mono': grey = (r+g+b)/3
+1F57:056F Vol_Mount                 # data dir, volume.vol or hl.exe
+1F57:098D Vol_Open
+1F57:0ADD Vol_Close
+1F57:0B57 Vol_Seek
+1F57:0CFB Vol_Read
+2039:0015 Vol_ReadXor
+2039:00B3 Vol_Unpack                # LZ with escape byte
+2039:0272 XorBlock
+2063:0584 KeyPressed                # edge-triggered
+2063:05CB KeyDown                   # level-triggered
+2063:0104 SetKey                    # held bitmap + pressed latch
+2063:01DE ReadJoysticks             # -> virtual scan codes 59..64
+2063:0858 PollKeyboard
+# data (DGROUP offsets)
+214D:0094 s_musicSequence
+214D:0B00 g_palette                 # 256 x RGB, 6-bit
+214D:0E8C g_curPalette
+214D:088C s_levelChars              # " $@.*!&0=#%<>"
+214D:4C45 g_gameState               # 1 play, 4 quit, 6 next, 7 prev
+214D:4C47 g_heartsTotal
+214D:4C49 g_heartsLeft
+214D:4C4B g_levelCount
+214D:4C5B g_spriteBase              # [14] first sprite per type
+214D:4C69 g_pending                 # [22*14] 1 = not yet processed this tick
+214D:4D9D g_frame                   # [22*14]
+214D:4ED1 g_state                   # [22*14]
+214D:5005 g_type                    # [22*14]
+214D:5139 g_player                  # far ptr to current player record
+214D:60D2 g_heroIdle                # ticks left before level ends without hero
+214D:60D7 g_exitTimer
+214D:60D8 g_deathTimer
+214D:60D9 g_activity                # moves this tick; 0 ends the level
+214D:60DB g_inputDir                # -1, 1, -22, 22
+214D:60DD g_tickCount
