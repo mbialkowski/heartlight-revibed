@@ -170,16 +170,20 @@ def advance_to(cands, cap, max_ticks=80, limit=300):
     return list(out.values())
 
 
-def apply_move(cands, m, max_wait=12):
-    """the key press lands on one of the next few ticks"""
+def apply_move(cands, m, max_wait=12, max_hold=3):
+    """the key press lands on one of the next few ticks; under load the key-up can arrive
+    late, so the key may be seen held for up to `max_hold` ticks"""
     out = {}
     for sim in cands:
         s = copy.deepcopy(sim)
         for _ in range(max_wait):
             s.restart_if_over()
             t = copy.deepcopy(s)
-            t.tick(DIRS.get(m, 0), m == 'E')
-            out.setdefault(key_of(t), t)
+            for _ in range(max_hold):
+                t.tick(DIRS.get(m, 0), m == 'E')
+                out.setdefault(key_of(t), copy.deepcopy(t))
+                if m == 'E':
+                    break
             s.tick()
     return list(out.values())
 
