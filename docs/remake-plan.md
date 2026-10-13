@@ -63,36 +63,114 @@ Autorzy/Credits screen and in the README.
   on the same ticks.
 * F1 overview: kept (8×8 sprites over the title picture, as the original), also on a touch button.
 
-## 4. Menus and options (as lazarus-revibed)
+## 4. Menus and options — requirements
 
-* **First screen** (needed in the browser to start audio): Polski / English, any key. Upright phone:
-  "turn the phone sideways".
-* **Title**: logo + the original's rotating credit pages, title tune. Menu: NOWA GRA / GRAJ DALEJ
-  (continue at the last level), WYBÓR POZIOMU (level select), EDYTOR (level editor), GRACZ (choose/rename one of 3
-  players), OPCJE, STEROWANIE, AUTORZY, WYJŚCIE.
-* **Level select**: the 70 levels as mini-maps with solved marks and authors; locked levels? No —
-  the original lets you play any level (Space+←/→), keep that.
-* **Pause** (Esc is "restart level" in the original, so pause is **P / Start / II**): Graj dalej,
-  Restart poziomu, Opcje, Sterowanie, Wyjdź do menu.
-* **Options** (`user://settings.cfg`):
+Modelled on lazarus-revibed; all texts in Polish and English (`strings.gd`), drawn with the
+original's 16×8 font where its characters suffice (menus use only those characters and the
+original's colours: yellow / green / blue).
 
-| option | values | default | note |
-|---|---|---|---|
-| Język / Language | Polski, English | first screen | |
-| Skalowanie | gładkie / ostre | gładkie | sharp-bilinear / nearest |
-| Kolory | VGA / VGA mono | VGA | the original's two graphics modes |
-| Płynny ruch | tak / nie | nie | smooth movement (3) |
-| Szeroki ekran | tak / nie | tak | side panels on wide screens |
-| Pchanie | oryginalne / zawsze | oryginalne | push on odd ticks only, or on every press |
-| Po ukończeniu | następny / następny nierozwiązany | następny | as the original |
-| Cofanie (undo) | tak / nie | nie | rewind moves (5); off = the original |
-| Sterowanie dotykowe | auto / tak / nie | auto | |
-| Dźwięk | tak / nie | tak | greys out the rows below |
-| Muzyka | 0–100 % | 70 % | in-game music exists in the original (F6) |
-| Efekty | 0–100 % | 100 % | |
-| Pełny ekran | tak / nie | — | hidden where impossible (iPhone) |
+### 4.1 General menu requirements
 
-F6/F7/F8 keep working in game and show the original's icons; F8 (joystick) becomes "gamepad on/off".
+* **R-M1** Every menu is usable with keyboard (arrows/WASD, Enter/Space confirm, Esc/Backspace
+  back), gamepad (d-pad/stick, A confirm, B back), mouse (hover + click) and touch (tap) — no
+  screen needs a device that is not present.
+* **R-M2** One highlighted item at a time; ↑/↓ moves (wraps), ←/→ changes the value of an option
+  row, confirm on an option row cycles its value. Greyed-out rows are skipped.
+* **R-M3** "Back" always returns to the previous screen; changes in options apply immediately and
+  are saved to `user://settings.cfg` (web: browser storage) when leaving the screen.
+* **R-M4** Menu sounds: the original's `key` sample on change/confirm; the title tune on the title
+  screen and its submenus; the in-game music (if on) continues under the pause menu.
+* **R-M5** Menus scale with the window like the game (sharp pixels) and fit both 4:3 and 16:9,
+  and a phone held upright.
+
+### 4.2 Menu tree
+
+```
+First screen (Polski / English; "turn the phone sideways" when upright)
+└─ Title (logo, rotating credit pages, current player, title tune)
+   ├─ NOWA GRA            start at level 1 (asks before resetting the player's progress)
+   ├─ GRAJ DALEJ          continue at the player's current level (greyed out without a save)
+   ├─ WYBÓR POZIOMU       level select
+   ├─ EDYTOR              level editor (5)
+   ├─ GRACZ               choose one of 3 players, rename, reset progress
+   ├─ OPCJE               options (4.4)
+   ├─ STEROWANIE          controls (4.5)
+   ├─ AUTORZY             credits (original credits + CC BY-SA notice + remake credits)
+   └─ WYJŚCIE             desktop: quit (the original's "press y to quit" confirmation);
+                          web: thank-you screen
+In game: Pause (P / Start / II)
+   ├─ GRAJ DALEJ
+   ├─ RESTART POZIOMU     the original's Esc
+   ├─ WYBÓR POZIOMU
+   ├─ OPCJE
+   ├─ STEROWANIE
+   └─ WYJDŹ DO MENU
+```
+
+### 4.3 Screens
+
+* **Level select**: grid of the 70 levels (or of a loaded `LEVELS.HL`) as 8×8 mini-maps with
+  number, author, solved mark (the original's ✓ icon) and hearts count; all levels playable, as
+  in the original. Counter "solved / total". Confirm plays, a second action opens it in the
+  editor.
+* **Player** (GRACZ): the original's three slots with names and solved counts; rename with the
+  keyboard or an on-screen keyboard (gamepad/touch) limited to the font's characters; reset
+  progress with confirmation; import of original `PLAYERn.STT`.
+* **Credits** (AUTORZY): Janusz Pelc; Maciej Miąsik, Paweł Wyrzycki, Marek Kubowicz; level
+  authors; Epic MegaGames and Xland 1994; CC release 2006; the licence text link; remake credits.
+
+### 4.4 Options (OPCJE)
+
+Grouped in four pages (Gra / Obraz / Dźwięk / Sterowanie), stored in `user://settings.cfg`.
+Defaults reproduce the original.
+
+| page | option | values | default | note |
+|---|---|---|---|---|
+| Gra | Język / Language | Polski, English | first screen | |
+| Gra | Pchanie | oryginalne / zawsze | oryginalne | push on odd ticks only, or on every press |
+| Gra | Po ukończeniu | następny / następny nierozwiązany | następny | |
+| Gra | Cofanie (undo) | tak / nie | nie | rewind moves (5) |
+| Gra | Prędkość | 100 % / 75 % / 50 % | 100 % | slower tick for beginners (rules unchanged) |
+| Obraz | Skalowanie | gładkie / ostre | gładkie | sharp-bilinear / nearest |
+| Obraz | Kolory | VGA / VGA mono | VGA | the original's two graphics modes |
+| Obraz | Płynny ruch | tak / nie | nie | smooth movement (3) |
+| Obraz | Szeroki ekran | tak / nie | tak | side panels on wide screens |
+| Obraz | Mapa (F1) | nie / tak | nie | start levels in the overview |
+| Obraz | Pełny ekran | tak / nie | — | hidden where impossible (iPhone) |
+| Dźwięk | Dźwięk | tak / nie | tak | greys out the rows below |
+| Dźwięk | Muzyka w grze | tak / nie | tak | the original's F6 |
+| Dźwięk | Muzyka | 0–100 % | 70 % | |
+| Dźwięk | Efekty | 0–100 % | 100 % | the original's F7 = on/off |
+| Dźwięk | Nakładanie efektów | oryginalne / zawsze | oryginalne | effects overlap only when music is off, or always |
+| Sterowanie | → the Controls screen (4.5) | | | |
+
+F6/F7/F8 keep working in game, change the same settings and show the original's icons; F8
+(joystick) becomes "gamepad on/off".
+
+### 4.5 Controls (STEROWANIE)
+
+One screen, reachable from the title, the pause menu and the options, with three tabs —
+**Klawiatura**, **Pad**, **Dotyk** — opening on the device last used:
+
+* **R-C1** Shows every action with its current bindings (and, on the Dotyk tab, a picture of the
+  touch layout with labelled buttons), so it doubles as the help screen.
+* **R-C2** Remapping: select an action, press the new key / button (Esc or B cancels); up to two
+  bindings per action on keyboard and gamepad. A key already used by another action is swapped
+  with it after a warning, never silently duplicated.
+* **R-C3** "Przywróć domyślne" (reset to defaults) per tab, with confirmation.
+* **R-C4** Actions that can never be left unbound: the four directions, pause, menu confirm/back;
+  the menu keeps working with the defaults even if game bindings are changed.
+* **R-C5** Pad: stick dead zone (10–50 %, default 25 % — the original's joystick used ±50 %),
+  d-pad and stick both move, vibration on death (tak/nie, default nie).
+* **R-C6** Dotyk: touch controls auto / tak / nie (auto = on touch screens); pad size
+  (S/M/L), opacity (25–100 %), layout for left- or right-handed play; landscape: over the picture,
+  portrait: below it.
+* **R-C7** "Przytrzymanie" (hold to repeat) is not an option: a held direction moves every tick
+  exactly as in the original; a tap counts for one tick (the original's key latch, 6).
+* **R-C8** Bindings are saved with the options and survive updates; unknown/removed actions in an
+  old settings file are ignored.
+
+Actions and default bindings are listed in section 6.
 
 ## 5. Extras that keep the rules intact
 
@@ -111,7 +189,7 @@ F6/F7/F8 keep working in game and show the original's icons; F8 (joystick) becom
   download, import with the file picker; desktop: `user://levels/*.hl`.
 * **Statistics** (optional): moves and time per level, best result.
 
-## 6. Controls
+## 6. Controls — actions and default bindings (remappable, 4.5)
 
 | action | keyboard | gamepad | touch |
 |---|---|---|---|
@@ -121,7 +199,8 @@ F6/F7/F8 keep working in game and show the original's icons; F8 (joystick) becom
 | previous / next level | Space + ←/→, PgUp/PgDn | LT / RT | in pause menu |
 | overview map | F1, Tab | Y | ⊞ |
 | music / sound / gamepad | F6 / F7 / F8 | | options |
-| pause | P | Start | II |
+| pause / menu | P | Start | II |
+| menu confirm / back | Enter, Space / Esc, Backspace | A / B | tap / ✕ |
 | full screen | F11, Alt+Enter | | [ ] |
 
 Input is sampled exactly like the original: held keys plus a latch so a tap shorter than a tick
@@ -142,7 +221,9 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
   (no emulator): all 70 levels × (idle 300 ticks + the 16-move scenarios + random walks with fixed
   seeds and both parities), full grid compared every tick. `hl_sim.py` itself is checked against the
   original in DOSBox by `tools/golden_check.py` (outside CI).
-* `scenarios.gd` — menus, save/load, undo, level change, custom LEVELS.HL errors.
+* `scenarios.gd` — menus (navigation with each device), options saved and restored, remapping
+  (swap on conflict, reset to defaults, mandatory actions), save/load, undo, level change, custom
+  LEVELS.HL errors.
 * `solutions.gd` — recorded solutions for levels (collected while play-testing) must still solve
   them.
 * `web_smoke.mjs` — the web build boots in headless Chromium and reaches level 1.
@@ -154,7 +235,7 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 | M0 | finish the verification: the 6 remaining DOSBox mismatches (levels 20, 21, 25, 26, 42, 50) explained and `hl_sim.py` fixed if needed | 70/70 with moves |
 | M1 | `build_remake_data.py`, `make_golden_traces.py`; Godot project skeleton; `sim.gd` port | `golden.gd` passes on all traces |
 | M2 | playable core: indexed renderer, status line, input, tick loop, restart/next level, sounds, music | level 1–70 playable on desktop |
-| M3 | menus, options, players and saving, level select, credits, PL/EN | all screens reachable by keyboard and gamepad |
+| M3 | menus (4.2–4.3), options (4.4), controls screen with remapping (4.5), players and saving, level select, credits, PL/EN | R-M1…R-M5 and R-C1…R-C8 met; every screen reachable by keyboard, gamepad, mouse and touch |
 | M4 | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
 | M5 | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
 | M6 | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
