@@ -23,6 +23,7 @@ let a rock fall on your head.
   and [`golden_check.py`](tools/golden_check.py), which plays the original in DOSBox and checks
   every captured frame against the simulator.
 * [`reference/`](reference/README.md) — annotated disassembly of `HL.EXE`.
+* [`docs/remake-plan.md`](docs/remake-plan.md) — the plan for the Godot remake.
 * [`tests/`](tests/README.md) — simulator unit tests, the DOSBox scenarios and their report.
 * [`original/`](original/README.md) — the original 2006 release files (CC BY-SA 2.5) and a
   DOSBox config.
