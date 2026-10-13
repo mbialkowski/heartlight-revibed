@@ -151,18 +151,22 @@ def key_of(sim):
             tuple(sim.state))
 
 
-def advance_to(cands, cap, max_ticks=80):
-    """advance each candidate with no input until it shows `cap`; keep those that can"""
+def advance_to(cands, cap, max_ticks=80, limit=300):
+    """advance each candidate with no input; keep every state within the window that shows
+    `cap` (the same picture can hide different tick parities or fuse states)"""
     out = {}
     for sim in cands:
         s = copy.deepcopy(sim)
         for _ in range(max_ticks):
             if same(cap, norm_sim(s)):
-                out.setdefault(key_of(s), s)
-                break
+                k = key_of(s)
+                if k not in out:
+                    out[k] = copy.deepcopy(s)
             if not s.level_running() and not s.restart_if_over():
                 break
             s.tick()
+            if len(out) >= limit:
+                break
     return list(out.values())
 
 
