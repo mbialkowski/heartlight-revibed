@@ -20,6 +20,7 @@ const Progress = preload("res://scripts/game/progress.gd")
 const S = preload("res://scripts/game/strings.gd")
 const TouchScript = preload("res://scripts/view/touch.gd")
 const Levels = preload("res://scripts/sim/levels.gd")
+const LevelSet = preload("res://scripts/game/level_set.gd")
 
 const SLIDE_STEP := 16              # pixels per vertical retrace (NextLevelScroll 1633:14A3)
 const RETRACE := 1.0 / 70.0
@@ -28,6 +29,8 @@ const UNDO_LIMIT := 1000
 const PANEL_MIN_W := 96             # side panels on wide screens, in text-layer pixels
 const PANEL_MAX_W := 320
 const CUSTOM_LEVELS := "user://custom_levels.hl"
+const EDITOR_FILE := "user://editor.json"       # the editor's work, saved after every change
+const AUTHOR_LEN := 30
 const TITLE_ITEMS := ["new", "continue", "levels", "editor", "player", "options", "controls",
 		"credits", "quit"]
 const OPTION_PAGES := {
@@ -91,6 +94,19 @@ var slide_t := 0.0
 var tick_count := 0                 # carried over between levels like DS:60DD
 var latched := {}
 var undo_stack := []
+
+# level editor
+var ed                              # LevelSet
+var ed_i := 0
+var ed_cur := Vector2i(1, 1)
+var ed_brush := 3                   # index in LevelSet.CHARS ("." grass)
+var ed_name := "LEVELS.HL"
+var ed_slots := []                  # mini-sprite slot of every brush
+var ed_stroke := false
+var ed_snap := []
+var ed_snap_used := false
+var testing := false                # playing a level from the editor
+var edit_target := "player"         # what the text entry edits: player name or level author
 
 # screenshots / automatic test
 var shots_dir := ""
@@ -300,6 +316,18 @@ func _input(event: InputEvent) -> void:
 	if mode == "rename":
 		_rename_input(event)
 		return
+	if mode == "editor":
+		_editor_input(event)
+		return
+	if mode == "editor_help":
+		if (event is InputEventKey or event is InputEventJoypadButton or event is InputEventMouseButton
+				or event is InputEventScreenTouch) and event.is_pressed() and not event.is_echo():
+			open_editor()
+		return
+	if mode == "levels" and ((event is InputEventKey and event.pressed and event.physical_keycode == KEY_E)
+			or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X)):
+		edit_from_levels(sel)
+		return
 	if event is InputEventMouseMotion or event is InputEventMouseButton or event is InputEventScreenTouch:
 		_pointer(event)
 		return
@@ -422,6 +450,8 @@ func _back() -> void:
 				open_title()
 		"first":
 			ui("ui_accept")
+		"editor_menu":
+			open_editor()
 		_:
 			open_title()
 
@@ -467,7 +497,7 @@ func open_title(new_sel := 0) -> void:
 				it["act"] = func(): start_game(progress.level(set_id))
 				it["enabled"] = progress.started(set_id)
 			"levels": it["act"] = func(): open_levels("title")
-			"editor": it["enabled"] = false        # M6
+			"editor": it["act"] = func(): open_editor()
 			"player": it["act"] = open_player
 			"options": it["act"] = func(): open_options("title")
 			"controls": it["act"] = func(): open_controls("title")
@@ -518,6 +548,13 @@ func _confirm(yes: bool) -> void:
 
 func open_pause() -> void:
 	audio.music_player.stream_paused = true
+	if testing:
+		set_menu("pause", [
+			{"label": t("resume"), "act": resume},
+			{"label": t("restart"), "act": _pause_restart},
+			{"label": t("ed_back"), "act": end_test},
+		])
+		return
 	set_menu("pause", [
 		{"label": t("resume"), "act": resume},
 		{"label": t("restart"), "act": _pause_restart},
@@ -783,6 +820,7 @@ func _select_player(i: int) -> void:
 
 
 func _start_rename() -> void:
+	edit_target = "player"
 	name_edit = progress.player()["name"]
 	mode = "rename"
 	draw_ui()
@@ -792,6 +830,10 @@ func _reset_player() -> void:
 	progress.reset_progress(set_id)
 	progress.save_file()
 	open_player()
+
+
+func _edit_len() -> int:
+	return AUTHOR_LEN if edit_target == "author" else Progress.NAME_LEN
 
 
 func _rename_input(event: InputEvent) -> void:
@@ -808,8 +850,10 @@ func _rename_input(event: InputEvent) -> void:
 				name_edit = name_edit.left(name_edit.length() - 1)
 				draw_ui()
 				return
-		var c := char(event.unicode).to_lower() if event.unicode > 0 else ""
-		if c != "" and chars.contains(c) and name_edit.length() < Progress.NAME_LEN:
+		var c := char(event.unicode) if event.unicode > 0 else ""
+		if edit_target == "player":
+			c = c.to_lower()
+		if c != "" and chars.contains(c.to_lower()) and name_edit.length() < _edit_len():
 			name_edit += c
 			draw_ui()
 		return
@@ -826,7 +870,7 @@ func _rename_input(event: InputEvent) -> void:
 		i = (i + (1 if event.is_action_pressed("ui_down", true) else -1) + chars.length()) % chars.length()
 		name_edit = name_edit.left(name_edit.length() - 1) + chars[i]
 		draw_ui()
-	elif event.is_action_pressed("ui_right", true) and name_edit.length() < Progress.NAME_LEN:
+	elif event.is_action_pressed("ui_right", true) and name_edit.length() < _edit_len():
 		name_edit += "a"
 		draw_ui()
 	elif event.is_action_pressed("ui_left", true):
@@ -837,6 +881,12 @@ func _rename_input(event: InputEvent) -> void:
 
 
 func _rename_done(ok: bool) -> void:
+	if edit_target == "author":
+		if ok:
+			ed.set_author(ed_i, name_edit.strip_edges())
+			_editor_save_work()
+		open_editor_menu(7)
+		return
 	if ok:
 		progress.rename(name_edit)
 		progress.save_file()
@@ -891,7 +941,7 @@ func draw_ui() -> void:
 			_draw_list(t("players"))
 		"rename":
 			_clear_base()
-			text.text_centered(t("rename"), 120, TextLayer.YELLOW)
+			text.text_centered(t("author") if edit_target == "author" else t("rename"), 120, TextLayer.YELLOW)
 			text.text_centered(S.glyph_text(name_edit) + "I", 160, TextLayer.GREEN)
 		"levels":
 			_clear_base()
@@ -899,6 +949,15 @@ func draw_ui() -> void:
 		"credits":
 			_clear_base()
 			_draw_credits()
+		"editor":
+			_draw_editor()
+		"editor_menu":
+			_draw_editor_level()
+			base_mat.set_shader_parameter("dim", 0.35)
+			_panel(t("editor"), 80, 480)
+		"editor_help":
+			_clear_base()
+			_draw_editor_help()
 		"bye":
 			_clear_base()
 			text.text_centered(t("quit_web"), 196, TextLayer.YELLOW)
@@ -941,14 +1000,14 @@ func _draw_list(title: String) -> void:
 		y += 15 if items.size() < 18 else 13
 
 
-func _panel(title: String) -> void:
+func _panel(title: String, x := 160, w := 320) -> void:
 	var h := items.size() * 15 + 40
 	var top := (400 - h) / 2
-	text.fill(Rect2i(160, top, 320, h), 0)
-	text.frame(Rect2i(160, top, 320, h), 162)
+	text.fill(Rect2i(x, top, w, h), 0)
+	text.frame(Rect2i(x, top, w, h), 162)
 	text.text_centered(title, top + 10, TextLayer.YELLOW)
 	for i in items.size():
-		_row(i, 200, top + 30 + i * 15, 240, false)
+		_row(i, x + 40, top + 30 + i * 15, w - 80, false)
 
 
 func _draw_levels() -> void:
@@ -1037,14 +1096,20 @@ func start_game(i: int) -> void:
 
 func start_level(i: int) -> void:
 	level = i
-	sim = Sim.new(Data.levels[level]["rows"], level, rand, tick_count)
+	sim = Sim.new(cur_levels()[level]["rows"], level, rand, tick_count)
 	acc = 0.0
 	play_state = "play"
 	overview = settings.get_value("map")
 	undo_stack.clear()
-	progress.set_level(set_id, level)
-	progress.save_file()
+	if not testing:
+		progress.set_level(set_id, level)
+		progress.save_file()
 	render()
+
+
+func cur_levels() -> Array:
+	"""the levels being played: the level file's, or the editor's while testing"""
+	return ed.levels if testing else Data.levels
 
 
 func _process(delta: float) -> void:
@@ -1074,7 +1139,7 @@ func _process(delta: float) -> void:
 				screen.update_texture()
 		"fade_out":
 			if not palette.busy():
-				sim.setup(Data.levels[level]["rows"])
+				sim.setup(cur_levels()[level]["rows"])
 				undo_stack.clear()
 				render()
 				palette.fade(1.0, 0.25)
@@ -1103,6 +1168,8 @@ func _take(a: String) -> bool:
 
 
 func game_tick() -> void:
+	if sim == null or mode != "play":
+		return
 	# keys are latched between ticks (a press between two ticks is never lost)
 	if _take("music"):
 		settings.set_value("music_on", not settings.get_value("music_on"))
@@ -1116,6 +1183,9 @@ func game_tick() -> void:
 	if _take("overview"):
 		overview = not overview
 	if _take("quit"):
+		if testing:
+			end_test()
+			return
 		save_all()
 		open_title()
 		return
@@ -1164,7 +1234,9 @@ func game_tick() -> void:
 	render()
 	_shot_hook()
 	if not sim.level_running():
-		if sim.game_state == Sim.NEXT_LEVEL:
+		if sim.game_state == Sim.NEXT_LEVEL and testing:
+			end_test()
+		elif sim.game_state == Sim.NEXT_LEVEL:
 			progress.mark_solved(set_id, level)
 			progress.save_file()
 			change_level(_next_level_step())
@@ -1194,6 +1266,8 @@ func _option_toggled() -> void:
 
 
 func change_level(step: int) -> void:
+	if testing:
+		return
 	slide_from = screen.image.duplicate()
 	slide_dir = 1 if step > 0 else -1
 	var n := Data.levels.size()
@@ -1235,7 +1309,7 @@ func render_into_screen() -> void:
 		if smooth_on() and play_state == "play":
 			screen.collect_moves(sim)
 	_draw_icons()
-	screen.draw_status(sim.hearts_total, sim.hearts_total - sim.hearts_left, Data.levels.size(),
+	screen.draw_status(sim.hearts_total, sim.hearts_total - sim.hearts_left, cur_levels().size(),
 			progress.solved(set_id).size(), progress.is_solved(set_id, level), level + 1)
 	screen.snap_base()
 
@@ -1272,7 +1346,7 @@ func draw_panels() -> void:
 			p.glyph2x(bar, 0, x if p == r else w - 32 - x, 384)
 	l.text_centered(t("level"), 24, TextLayer.GREEN)
 	_big_centered(l, str(level + 1), 40, TextLayer.YELLOW)
-	var author: String = Data.levels[level]["author"]
+	var author: String = cur_levels()[level]["author"]
 	if author != "":
 		l.text_centered(t("author"), 88, TextLayer.GREEN)
 		var y := 104
@@ -1287,7 +1361,7 @@ func draw_panels() -> void:
 	r.text_centered(t("hearts"), 24, TextLayer.GREEN)
 	r.text_centered("%d:%d" % [sim.hearts_total - sim.hearts_left, sim.hearts_total], 40, TextLayer.YELLOW)
 	r.glyph2x(screen.glyph_index(")" if progress.is_solved(set_id, level) else "("), 2, (w - 32) / 2, 72)
-	r.text_centered("%d:%d" % [progress.solved(set_id).size(), Data.levels.size()], 96, TextLayer.BLUE)
+	r.text_centered("%d:%d" % [progress.solved(set_id).size(), cur_levels().size()], 96, TextLayer.BLUE)
 	var on := [settings.get_value("music_on"), settings.get_value("sound"), settings.get_value("gamepad")]
 	for i in 3:
 		var x := (w - 40) / 2
@@ -1402,12 +1476,20 @@ func pick_levels_file() -> void:
 
 func _file_chosen(ok: bool, paths: PackedStringArray, _filter: int) -> void:
 	if ok and paths.size() > 0:
-		load_levels_file(FileAccess.get_file_as_bytes(paths[0]), paths[0])
+		_got_file(FileAccess.get_file_as_bytes(paths[0]), paths[0])
 
 
 func _files_dropped(files: PackedStringArray) -> void:
-	if files.size() > 0 and mode != "play":
-		load_levels_file(FileAccess.get_file_as_bytes(files[0]), files[0])
+	if files.size() > 0:
+		_got_file(FileAccess.get_file_as_bytes(files[0]), files[0])
+
+
+func _got_file(bytes: PackedByteArray, file_name: String) -> void:
+	"""a chosen or dropped file: into the editor when it is open, else played"""
+	if mode in ["editor", "editor_menu", "editor_help"]:
+		editor_load_file(bytes, file_name)
+	elif mode != "play":
+		load_levels_file(bytes, file_name)
 
 
 func _web_setup() -> void:
@@ -1440,9 +1522,435 @@ func _web_setup() -> void:
 
 
 func _web_file(args: Array) -> void:
-	if mode == "play":
+	_got_file(Marshalls.base64_to_raw(str(args[1])), str(args[0]))
+
+
+# level editor (plan 5) -------------------------------------------------------------------------
+## The level on the screen with a cursor; the bottom line holds the 13 objects (the original's
+## 8x8 sprites) and the level number. Keyboard: arrows move, Space paints, the file's own
+## characters ($ @ . * ! & 0 = # % < >) choose and paint, Delete clears, Q/E/Tab change the
+## object, Z undoes, PgUp/PgDn change the level, T tests, F1 help, Esc menu. Mouse and touch:
+## paint by dragging, right button picks the object under it, tap the objects or "menu" below.
+## Gamepad: A paints, LB/RB object, Y tests, X picks, Start/B menu.
+func open_editor(at := -1) -> void:
+	if ed == null:
+		_editor_load()
+	if at >= 0:
+		ed_i = clampi(at, 0, ed.levels.size() - 1)
+	ed_i = clampi(ed_i, 0, ed.levels.size() - 1)
+	if ed_slots.is_empty():
+		for c in LevelSet.CHARS:
+			ed_slots.append(Sim.new([c], 0, Rand.new(1)).sprite(0, 0))
+	testing = false
+	sim = null
+	ed_stroke = false
+	mode = "editor"
+	items = []
+	audio.stop_music()
+	palette.level = 1.0
+	palette.fade(1.0, 0.01)
+	base_mat.set_shader_parameter("dim", 1.0)
+	draw_ui()
+
+
+func _editor_load() -> void:
+	ed = null
+	if FileAccess.file_exists(EDITOR_FILE):
+		var d = JSON.parse_string(FileAccess.get_file_as_string(EDITOR_FILE))
+		if d is Dictionary and d.get("levels") is Array and not d["levels"].is_empty():
+			ed = LevelSet.new()
+			for l in d["levels"]:
+				var rows := []
+				for y in 12:
+					var r: String = str(l["rows"][y]) if l.get("rows") is Array and y < l["rows"].size() else ""
+					rows.append(r.left(20).rpad(20))
+				ed.levels.append({"rows": rows, "author": str(l.get("author", ""))})
+			ed.header = str(d.get("header", ""))
+			ed_name = str(d.get("name", "LEVELS.HL"))
+			ed_i = int(d.get("level", 0))
+	if ed == null:
+		_editor_from_game()
+
+
+func _editor_from_game() -> void:
+	var original := FileAccess.get_file_as_string("res://data/LEVELS.HL")
+	ed = LevelSet.from_text(Data.levels_text, LevelSet.header_of(original))
+	ed_name = settings.levels_name if settings.levels_name != "" else "LEVELS.HL"
+	ed_i = 0
+	_editor_save_work()
+
+
+func _editor_save_work() -> void:
+	var f := FileAccess.open(EDITOR_FILE, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify({"name": ed_name, "level": ed_i, "header": ed.header,
+				"levels": ed.levels}))
+		f.close()
+
+
+func edit_from_levels(i: int) -> void:
+	"""level select: E / gamepad X opens the level in the editor"""
+	if ed == null:
+		_editor_load()
+	var same: bool = ed.to_text() == LevelSet.from_text(Data.levels_text, ed.header).to_text()
+	if same:
+		open_editor(i)
+	else:
+		open_confirm(t("ed_replace_q"), func(): _editor_from_game(); open_editor(i),
+				func(): open_levels(back_to))
+
+
+func _draw_editor_level() -> void:
+	screen.draw_level(Sim.new(ed.levels[ed_i]["rows"], ed_i, Rand.new(1)))
+	screen.clear(Rect2i(0, 192, 320, 8))
+	for k in ed_slots.size():
+		screen.mini_sprite(ed_slots[k], 2 + k * 10, 192)
+	screen.update_texture()
+
+
+func _draw_editor() -> void:
+	_draw_editor_level()
+	var c := Rect2i(ed_cur * 32, Vector2i(32, 32))
+	text.frame(c, 195)
+	text.frame(c.grow(-1), 0)
+	text.frame(Rect2i(4, 384, 16, 16), 162)        # the empty brush
+	text.frame(Rect2i(4 + ed_brush * 20 - 2, 382, 20, 18), 195)
+	text.text("%d:%d" % [ed_i + 1, ed.levels.size()], 290, 388, TextLayer.YELLOW)
+	var m := t("ed_menu")
+	text.text(m, 632 - m.length() * 16, 388, TextLayer.GREEN)
+
+
+func _draw_editor_help() -> void:
+	text.text_centered(t("ed_help"), 12, TextLayer.YELLOW)
+	var y := 40
+	for k in range(1, 13):
+		text.text(t("ed_h%d" % k), 24, y, TextLayer.GREEN if k % 2 else TextLayer.BLUE)
+		y += 16 if k % 2 == 0 else 12
+	var x := 24
+	for k in ed_slots.size():
+		var s: int = ed_slots[k]
+		text.image.blit_rect_mask(text.minis, text.minis, Rect2i((s % 8) * 8, (s / 8) * 8, 8, 8),
+				Vector2i(x + k * 20, 360))
+
+
+func _editor_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton or event is InputEventMouseMotion \
+			or event is InputEventScreenTouch or event is InputEventScreenDrag:
+		_editor_pointer(event)
 		return
-	load_levels_file(Marshalls.base64_to_raw(str(args[1])), str(args[0]))
+	if event is InputEventJoypadButton and event.pressed:
+		match event.button_index:
+			JOY_BUTTON_A: _ed_paint(ed_cur, LevelSet.CHARS[ed_brush], true)
+			JOY_BUTTON_X: ed_brush = LevelSet.CHARS.find(ed.cell(ed_i, ed_cur.x, ed_cur.y))
+			JOY_BUTTON_LEFT_SHOULDER: _ed_brush(-1)
+			JOY_BUTTON_RIGHT_SHOULDER: _ed_brush(1)
+			JOY_BUTTON_Y: editor_test()
+			JOY_BUTTON_B, JOY_BUTTON_START: open_editor_menu()
+		if mode == "editor" and event.button_index not in [JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN,
+				JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT]:
+			_editor_save_work()
+			draw_ui()
+			return
+	if event is InputEventKey and event.pressed:
+		var c := char(event.unicode) if event.unicode > 0 else ""
+		if c != "" and c != " " and LevelSet.CHARS.contains(c):
+			ed_brush = LevelSet.CHARS.find(c)
+			_ed_paint(ed_cur, c, true)
+			ed_cur.x = mini(ed_cur.x + 1, 19)
+			_editor_save_work()
+			draw_ui()
+			return
+		var handled := true
+		match event.physical_keycode:
+			KEY_SPACE, KEY_ENTER, KEY_KP_ENTER:
+				_ed_paint(ed_cur, LevelSet.CHARS[ed_brush], true)
+			KEY_DELETE:
+				_ed_paint(ed_cur, " ", true)
+			KEY_TAB:
+				_ed_brush(-1 if event.shift_pressed else 1)
+			KEY_E:
+				_ed_brush(1)
+			KEY_Q:
+				_ed_brush(-1)
+			KEY_Z:
+				_ed_undo()
+			KEY_PAGEUP:
+				_ed_goto(ed_i - 1)
+			KEY_PAGEDOWN:
+				_ed_goto(ed_i + 1)
+			KEY_T, KEY_F5:
+				editor_test()
+				return
+			KEY_F1, KEY_H:
+				mode = "editor_help"
+				draw_ui()
+				return
+			KEY_ESCAPE, KEY_BACKSPACE:
+				open_editor_menu()
+				return
+			_:
+				handled = false
+		if handled:
+			_editor_save_work()
+			draw_ui()
+			return
+	for a in ["ui_up", "ui_down", "ui_left", "ui_right"]:
+		if event.is_action_pressed(a, true):
+			var d: Vector2i = {"ui_up": Vector2i.UP, "ui_down": Vector2i.DOWN, "ui_left": Vector2i.LEFT,
+					"ui_right": Vector2i.RIGHT}[a]
+			ed_cur = (ed_cur + d).clamp(Vector2i.ZERO, Vector2i(19, 11))
+			draw_ui()
+			return
+
+
+func _editor_pointer(event: InputEvent) -> void:
+	var p := to_text_coords(event.position)
+	var left_down: bool = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT
+			and event.pressed) or (event is InputEventScreenTouch and event.pressed)
+	var left_up: bool = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT
+			and not event.pressed) or (event is InputEventScreenTouch and not event.pressed)
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_ed_brush(-1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1)
+			draw_ui()
+			return
+	if left_up:
+		if ed_stroke:
+			ed_stroke = false
+			_editor_save_work()
+		return
+	if p.x < 0 or p.x >= 640 or p.y < 0 or p.y >= 400:
+		return
+	if p.y >= 384:
+		if left_down:
+			if p.x < 4 + LevelSet.CHARS.length() * 20:
+				ed_brush = clampi(int((p.x - 4) / 20), 0, LevelSet.CHARS.length() - 1)
+				audio.play("key")
+				draw_ui()
+			elif p.x >= 520:
+				open_editor_menu()
+		return
+	var cell := Vector2i(clampi(int(p.x / 32), 0, 19), clampi(int(p.y / 32), 0, 11))
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		ed_brush = LevelSet.CHARS.find(ed.cell(ed_i, cell.x, cell.y))
+		ed_cur = cell
+		draw_ui()
+		return
+	if left_down:
+		ed_stroke = true
+		ed_cur = cell
+		_ed_paint(cell, LevelSet.CHARS[ed_brush], true)
+		draw_ui()
+	elif ed_stroke and (event is InputEventMouseMotion or event is InputEventScreenDrag):
+		ed_cur = cell
+		_ed_paint(cell, LevelSet.CHARS[ed_brush], false)
+		draw_ui()
+	elif event is InputEventMouseMotion and cell != ed_cur:
+		ed_cur = cell
+		draw_ui()
+
+
+func _ed_paint(cell: Vector2i, ch: String, new_stroke: bool) -> void:
+	"""one undo step per stroke (a press and its drag), saved only if something changes"""
+	if new_stroke:
+		ed_snap = ed.levels.duplicate(true)
+		ed_snap_used = false
+	if ed.cell(ed_i, cell.x, cell.y) == ch:
+		return
+	if not ed_snap_used:
+		ed.undo_stack.append(ed_snap)
+		if ed.undo_stack.size() > LevelSet.UNDO_LIMIT:
+			ed.undo_stack.pop_front()
+		ed_snap_used = true
+	ed.paint(ed_i, cell.x, cell.y, ch)
+
+
+func _ed_brush(step: int) -> void:
+	var n := LevelSet.CHARS.length()
+	ed_brush = (ed_brush + step + n) % n
+
+
+func _ed_undo() -> void:
+	if ed.undo():
+		ed_i = clampi(ed_i, 0, ed.levels.size() - 1)
+
+
+func _ed_goto(i: int, in_menu := false) -> void:
+	var n: int = ed.levels.size()
+	ed_i = (i % n + n) % n
+	_editor_save_work()
+	if in_menu:
+		open_editor_menu(sel)
+	else:
+		draw_ui()
+
+
+func open_editor_menu(new_sel := 0) -> void:
+	var n: int = ed.levels.size()
+	var author: String = ed.levels[ed_i]["author"]
+	set_menu("editor_menu", [
+		{"label": t("ed_back"), "act": open_editor},
+		{"label": t("ed_test"), "act": editor_test},
+		{"label": "%s %d:%d" % [t("level"), ed_i + 1, n], "act": func(): _ed_goto(ed_i + 1, true),
+			"left": func(): _ed_goto(ed_i - 1, true), "right": func(): _ed_goto(ed_i + 1, true)},
+		{"label": t("ed_new"), "act": func(): _ed_add(false), "enabled": n < LevelSet.MAX},
+		{"label": t("ed_copy"), "act": func(): _ed_add(true), "enabled": n < LevelSet.MAX},
+		{"label": t("ed_move"), "act": func(): _ed_move(1),
+			"left": func(): _ed_move(-1), "right": func(): _ed_move(1), "enabled": n > 1},
+		{"label": t("ed_delete"), "act": _ed_delete_q, "enabled": n > 1},
+		{"label": S.glyph_text(S.get_text("author") + " " + author).left(26), "act": _ed_author},
+		{"label": t("a_undo"), "act": func(): _ed_undo(); _editor_save_work(); open_editor_menu(8),
+			"enabled": not ed.undo_stack.is_empty()},
+		{"label": t("ed_save"), "act": editor_save},
+		{"label": t("ed_play"), "act": editor_play_set},
+		{"label": t("ed_open"), "act": pick_levels_file},
+		{"label": t("ed_from_game"), "act": func(): open_confirm(t("ed_replace_q"),
+				func(): _editor_from_game(); open_editor(), func(): open_editor_menu(12))},
+		{"label": t("ed_help"), "act": func(): mode = "editor_help"; draw_ui()},
+		{"label": t("to_menu"), "act": _editor_quit},
+	], new_sel)
+
+
+func _ed_add(copy: bool) -> void:
+	var j: int = ed.add(ed_i, copy)
+	if j >= 0:
+		ed_i = j
+	_editor_save_work()
+	open_editor()
+
+
+func _ed_move(step: int) -> void:
+	ed_i = ed.move(ed_i, step)
+	_editor_save_work()
+	open_editor_menu(5)
+
+
+func _ed_delete_q() -> void:
+	open_confirm(t("ed_delete_q"), func(): ed_i = ed.remove(ed_i); _editor_save_work(); open_editor(),
+			func(): open_editor_menu(6))
+
+
+func _ed_author() -> void:
+	edit_target = "author"
+	name_edit = ed.levels[ed_i]["author"]
+	mode = "rename"
+	draw_ui()
+
+
+func _editor_quit() -> void:
+	_editor_save_work()
+	open_title(TITLE_ITEMS.find("editor"))
+
+
+func _ed_problem(r: Dictionary) -> bool:
+	"""shows the original's error for the file and goes to the level; true when there is one"""
+	if r["error"] == "":
+		return false
+	if r["level"] >= 0:
+		ed_i = r["level"]
+	notice = S.glyph_text("%s: %s" % [S.get_text("level_error"), r["error"]])
+	notice_t = 4.0
+	mode = "editor"
+	draw_ui()
+	return true
+
+
+func editor_test() -> void:
+	"""plays the level being edited; the end of the level, F10 or the pause menu come back"""
+	var one := LevelSet.new()
+	one.levels = [ed.levels[ed_i]]
+	var r: Dictionary = one.check()
+	if r["error"] != "":
+		r["error"] = r["error"].replace("#1!", "#%d!" % (ed_i + 1))
+		r["level"] = ed_i
+	if _ed_problem(r):
+		return
+	_editor_save_work()
+	testing = true
+	start_game(ed_i)
+
+
+func end_test() -> void:
+	testing = false
+	audio.stop_all()
+	open_editor()
+
+
+func editor_save() -> void:
+	"""checks the file with the original's rules, then saves it: desktop a file dialog, web a
+	download"""
+	if _ed_problem(ed.check()):
+		return
+	_editor_save_work()
+	var bytes: PackedByteArray = ed.to_bytes()
+	if OS.has_feature("web"):
+		JavaScriptBridge.download_buffer(bytes, ed_name, "application/octet-stream")
+		_ed_saved(ed_name)
+	elif DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
+		DisplayServer.file_dialog_show(t("ed_save"), OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS),
+				ed_name, false, DisplayServer.FILE_DIALOG_MODE_SAVE_FILE,
+				PackedStringArray(["*.hl, *.HL"]), _ed_save_chosen)
+	elif DisplayServer.get_name() != "headless":
+		var d := FileDialog.new()
+		d.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+		d.access = FileDialog.ACCESS_FILESYSTEM
+		d.filters = PackedStringArray(["*.hl, *.HL"])
+		d.current_file = ed_name
+		d.file_selected.connect(func(path): _ed_save_chosen(true, PackedStringArray([path]), 0))
+		add_child(d)
+		d.popup_centered_ratio(0.8)
+	else:
+		save_editor_file("user://levels".path_join(ed_name))
+
+
+func _ed_save_chosen(ok: bool, paths: PackedStringArray, _filter: int) -> void:
+	if ok and paths.size() > 0:
+		save_editor_file(paths[0])
+
+
+func save_editor_file(path: String) -> bool:
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		notice = S.glyph_text(path.get_file())
+		notice_t = 3.0
+		draw_ui()
+		return false
+	f.store_buffer(ed.to_bytes())
+	f.close()
+	ed_name = path.get_file()
+	_editor_save_work()
+	_ed_saved(ed_name)
+	return true
+
+
+func _ed_saved(file_name: String) -> void:
+	notice = S.glyph_text(S.get_text("ed_saved") + " " + file_name)
+	notice_t = 3.0
+	mode = "editor"
+	draw_ui()
+
+
+func editor_play_set() -> void:
+	if _ed_problem(ed.check()):
+		return
+	_editor_save_work()
+	load_levels_file(ed.to_bytes(), ed_name)
+
+
+func editor_load_file(bytes: PackedByteArray, file_name: String) -> void:
+	var text := bytes.get_string_from_ascii()
+	var r := Levels.parse(text)
+	if r["error"] != "":
+		notice = S.glyph_text("%s %d: %s" % [S.get_text("level_error"), r["line"], r["error"]])
+		notice_t = 4.0
+		draw_ui()
+		return
+	ed = LevelSet.from_text(text)
+	ed_name = file_name.get_file()
+	ed_i = 0
+	_editor_save_work()
+	open_editor()
 
 
 # screenshots ---------------------------------------------------------------------------------
@@ -1468,6 +1976,12 @@ func _screens_tour() -> void:
 	await _shot("06_player")
 	open_credits()
 	await _shot("07_credits")
+	open_editor(1)
+	ed_cur = Vector2i(6, 4)
+	draw_ui()
+	await _shot("07_editor")
+	open_editor_menu()
+	await _shot("07_editor_menu")
 	start_game(0)
 	await _shot("08_play")
 	open_pause()

@@ -1,11 +1,11 @@
 # Heartlight: Revibed — the Godot 4 remake
 
-Work in progress, following [the plan](../docs/remake-plan.md). **M5 done**: all 70 levels with
+Work in progress, following [the plan](../docs/remake-plan.md). **M6 done**: all 70 levels with
 the original's rules (tick for tick), graphics (pixel for pixel), sounds and music; title, pause,
 options, controls with remapping, level select, three players with saving, credits, Polish and
 English; a web build (installable as an app, PWA) with touch controls for phones, held sideways or
 upright; side panels on wide screens, smooth movement, undo and other level files (options, all off
-or as the original by default).
+or as the original by default); a level editor that saves files the original game plays.
 
 | title | level select | play |
 |---|---|---|
@@ -21,6 +21,30 @@ Wide screen (option *szeroki ekran*): the level number, author, hearts, solved l
 option icons beside the picture.
 
 ![](../docs/images/remake/wide.png)
+
+## Level editor
+
+EDYTOR POZIOMÓW on the title (or E / gamepad X on a level in WYBÓR POZIOMU).
+
+| editing | editor menu |
+|---|---|
+| ![](../docs/images/remake/editor.png) | ![](../docs/images/remake/editor_menu.png) |
+
+* The level with a cursor; below it the 13 objects (the original's small sprites) and the level
+  number. Keyboard: arrows move, Space puts the object, the level file's own characters
+  (`$ @ . * ! & 0 = # % < >`) choose and put that object, Delete clears, Q/E/Tab change the
+  object, Z undoes, PgUp/PgDn change the level, T tests, F1 help, Esc menu. Mouse and touch: drag
+  to paint, right button picks the object under it, tap an object or MENU below. Gamepad: d-pad,
+  A puts, LB/RB object, X picks, Y tests, Start menu.
+* Menu: test the level (its end, F10 or the pause menu come back), go to / add / duplicate /
+  move / delete levels, author, undo, save, play the whole file, open a file, take the game's
+  levels, help.
+* Before testing, saving or playing, the file is checked with the original parser's rules and
+  messages (a dwarf, a door, 12 rows, fewer than 199 levels); the editor jumps to the level.
+* Saving writes a standard `LEVELS.HL` (the original's legend header, `author:` lines, CR LF, ^Z):
+  desktop asks where (file dialog), the web downloads it. The work in progress is kept in
+  `user://editor.json`. A saved file was checked in the original game in DOSBox
+  ([`tests/editor_file/`](../tests/editor_file/README.md)).
 
 ## Playing
 
@@ -66,12 +90,13 @@ on a 640x400 layer over the 320x200 screen: the original's glyphs at half size, 
 | `scripts/game/settings.gd` | options, bindings (swap on conflict, defaults), input map |
 | `scripts/game/progress.gd` | three players, solved levels per level file, current level |
 | `scripts/game/strings.gd` | Polish and English texts |
+| `scripts/game/level_set.gd` | the editor's levels: painting, undo, add/move/delete, the original's checks, LEVELS.HL writing |
 | `scripts/view/text_layer.gd` | the 640x400 menu layer |
 | `scripts/view/screen.gd` | the 320x200 screen in palette indices: cells, status line, icons, overview |
 | `scripts/view/touch.gd` | on-screen pad and buttons (multi-touch) |
 | `scripts/view/palette.gd`, `palette.gdshader` | palette (fades, VGA mono) and sharp-bilinear scaling |
 | `scripts/main.gd` | the screens and the play loop (tick, restart fade, level slide, undo), side panels, level files |
-| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (69 checks: menus, options, remapping, players, saving, undo, level change, smooth movement, side panels, level files), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, and wide with a dropped level file, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
+| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (98 checks: menus, options, remapping, players, saving, undo, level change, smooth movement, side panels, level files, the editor), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, and wide with a dropped level file, opens the editor and paints, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
 
 ## Running the tests
 

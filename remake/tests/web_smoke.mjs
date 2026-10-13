@@ -83,6 +83,23 @@ await run("wide", { viewport: { width: 1600, height: 900 } }, async (page) => {
   await page.screenshot({ path: `${out}/wide_game.png` });
 });
 
+// the level editor: open it from the title, paint with the keyboard and the mouse
+await run("editor", { viewport: { width: 1280, height: 800 } }, async (page) => {
+  await page.keyboard.press("Enter");             // Polski
+  await sleep(1500);
+  for (let i = 0; i < 2; i++) { await page.keyboard.press("ArrowDown"); await sleep(200); }  // "continue" is skipped
+  await page.keyboard.press("Enter");             // edytor poziomów
+  await sleep(1500);
+  await page.keyboard.type("@@$", { delay: 100 });
+  await sleep(500);
+  await page.mouse.move(700, 300);
+  await page.mouse.down();
+  await page.mouse.move(900, 300, { steps: 8 });
+  await page.mouse.up();
+  await sleep(800);
+  await page.screenshot({ path: `${out}/editor.png` });
+});
+
 const phone = { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
 await run("phone", phone, async (page) => {
   await page.touchscreen.tap(420, 200);           // first screen

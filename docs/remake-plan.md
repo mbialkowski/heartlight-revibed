@@ -1,7 +1,7 @@
 # Heartlight: Revibed — remake implementation plan
 
-Status: **M0–M5 done** (rules verified against the original; ported to Godot, 280/280 golden
-traces; playable on desktop with menus, options, controls and saving; rendering pixel-exact; web build with touch controls for phones; widescreen panels, smooth movement, undo, other level files) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
+Status: **M0–M6 done** (rules verified against the original; ported to Godot, 280/280 golden
+traces; playable on desktop with menus, options, controls and saving; rendering pixel-exact; web build with touch controls for phones; widescreen panels, smooth movement, undo, other level files; level editor whose files play in the original) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
 default, original behaviour by default, level editor in the first release. Built on the reverse engineering in
 [`reverse-engineering/`](reverse-engineering/README.md) and modelled on the
 [lazarus-revibed](https://github.com/mbialkowski/lazarus-revibed) remake (same engine, same layout,
@@ -239,7 +239,7 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 | M3 ✓ | menus (4.2–4.3), options (4.4), controls screen with remapping (4.5), players and saving, level select, credits, PL/EN | R-M1…R-M5 and R-C1…R-C8 met; every screen reachable by keyboard, gamepad, mouse and touch |
 | M4 ✓ | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
 | M5 ✓ | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
-| M6 | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
+| M6 ✓ | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
 | M7 | polish: screenshots, README, solutions collected for all 70 levels | first release |
 
 ## 10. Decisions (confirmed)

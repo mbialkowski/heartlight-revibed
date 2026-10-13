@@ -10,6 +10,9 @@ const Levels = preload("res://scripts/sim/levels.gd")
 const Sim = preload("res://scripts/sim/sim.gd")
 
 const CUSTOM := "user://custom_levels.hl"
+const EDITOR := "user://editor.json"
+const SAVED := "user://levels/TEST.HL"
+const LevelSet = preload("res://scripts/game/level_set.gd")
 
 var failures := 0
 var checks := 0
@@ -24,7 +27,7 @@ func expect(cond: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	for f in [Settings.PATH, Progress.PATH, CUSTOM]:
+	for f in [Settings.PATH, Progress.PATH, CUSTOM, EDITOR, SAVED]:
 		if FileAccess.file_exists(f):
 			DirAccess.remove_absolute(f)
 	await process_frame
@@ -40,8 +43,9 @@ func _initialize() -> void:
 	test_smooth()
 	test_wide()
 	test_level_file()
+	await test_editor()
 	test_settings_file()
-	for f in [Settings.PATH, Progress.PATH, CUSTOM]:
+	for f in [Settings.PATH, Progress.PATH, CUSTOM, EDITOR, SAVED]:
 		if FileAccess.file_exists(f):
 			DirAccess.remove_absolute(f)
 	print("scenarios: %d/%d checks passed" % [checks - failures, checks])
@@ -280,3 +284,127 @@ func test_level_file() -> void:
 	expect(root.get_node("Data").levels.size() == n and main.set_id == original_id, "back to the original levels")
 	expect(not FileAccess.file_exists(CUSTOM), "the copy is removed")
 	main.open_title()
+
+
+func key(code: int, unicode := 0) -> void:
+	var e := InputEventKey.new()
+	e.pressed = true
+	e.physical_keycode = code
+	e.keycode = code
+	e.unicode = unicode
+	main._input(e)
+
+
+func mouse(kind: String, cell: Vector2i, button := MOUSE_BUTTON_LEFT, pressed := true) -> void:
+	var e: InputEvent
+	if kind == "move":
+		e = InputEventMouseMotion.new()
+	else:
+		e = InputEventMouseButton.new()
+		e.button_index = button
+		e.pressed = pressed
+	var r: Rect2 = main.display_rect
+	e.position = r.position + (Vector2(cell) * 32.0 + Vector2(16, 16)) / Vector2(640, 400) * r.size
+	main._input(e)
+
+
+func test_editor() -> void:
+	var data = root.get_node("Data")
+	main.open_title()
+	main.sel = main.TITLE_ITEMS.find("editor")
+	press("ui_accept")
+	expect(main.mode == "editor" and main.ed.levels.size() == 70, "the editor opens with the game's levels")
+	main.ed_cur = Vector2i(2, 2)
+	key(KEY_2, "@".unicode_at(0))
+	expect(main.ed.cell(0, 2, 2) == "@" and main.ed_cur == Vector2i(3, 2), "typing a level character puts it")
+	key(KEY_Z)
+	expect(main.ed.cell(0, 2, 2) != "@", "z undoes")
+	key(KEY_DOWN)
+	expect(main.ed_cur == Vector2i(3, 3), "arrows move the cursor")
+	key(KEY_DELETE)
+	expect(main.ed.cell(0, 3, 3) == " ", "delete clears")
+	main.ed_brush = LevelSet.CHARS.find("#")
+	var undo_n: int = main.ed.undo_stack.size()
+	mouse("button", Vector2i(5, 5))
+	mouse("move", Vector2i(6, 5))
+	mouse("move", Vector2i(7, 5))
+	mouse("button", Vector2i(7, 5), MOUSE_BUTTON_LEFT, false)
+	expect(main.ed.cell(0, 5, 5) == "#" and main.ed.cell(0, 7, 5) == "#", "dragging paints")
+	expect(main.ed.undo_stack.size() == undo_n + 1, "one stroke, one undo step")
+	mouse("button", Vector2i(1, 1), MOUSE_BUTTON_RIGHT)
+	expect(LevelSet.CHARS[main.ed_brush] == main.ed.cell(0, 1, 1), "right button picks the object")
+	key(KEY_PAGEDOWN)
+	expect(main.ed_i == 1, "page down: next level")
+	key(KEY_ESCAPE)
+	expect(main.mode == "editor_menu", "esc opens the editor menu")
+	main.sel = 3
+	press("ui_accept")                     # new level after level 2
+	expect(main.ed.levels.size() == 71 and main.ed_i == 2 and main.mode == "editor", "new level")
+	expect(main.ed.levels[2]["rows"][1][1] == "*", "a new level has the dwarf and the door")
+	main.open_editor_menu(5)
+	press("ui_left")
+	expect(main.ed_i == 1 and main.ed.levels[1]["rows"][1][1] == "*", "level moved")
+	main.open_editor_menu(6)
+	press("ui_accept")
+	main._confirm(true)
+	expect(main.ed.levels.size() == 70, "level deleted")
+	# a level without the dwarf: the original's error, before testing or saving
+	main.ed_i = 3
+	main.ed.paint(3, 0, 0, "%")
+	for y in 12:
+		for x in 20:
+			if main.ed.cell(3, x, y) == "*":
+				main.ed.paint(3, x, y, ".")
+	main.editor_test()
+	expect(main.mode == "editor" and not main.testing and main.notice.contains("no hero on level  4"),
+			"testing a level without a dwarf is refused with the original message")
+	main.ed.paint(3, 1, 1, "*")
+	# test a tiny level: the end of the level comes back to the editor
+	main.ed.levels[3]["rows"] = LevelSet.new_level("")["rows"]
+	main.ed.levels[3]["rows"][1] = "%*!" + main.ed.levels[3]["rows"][1].substr(3)
+	main.editor_test()
+	expect(main.mode == "play" and main.testing and main.level == 3, "testing plays the edited level")
+	ticks(4)
+	ticks(1, "right")
+	ticks(20)
+	expect(main.mode == "editor" and not main.testing, "finishing the test returns to the editor")
+	expect(not main.progress.is_solved(main.set_id, 3), "testing does not mark levels solved")
+	main.editor_test()
+	main.latched["quit"] = true
+	main.game_tick()
+	expect(main.mode == "editor", "f10 returns to the editor")
+	# saving: a standard LEVELS.HL that the original's parser reads back
+	main.ed.set_author(3, "Tester")
+	expect(main.save_editor_file(SAVED), "saved")
+	var bytes := FileAccess.get_file_as_bytes(SAVED)
+	var text := bytes.get_string_from_ascii()
+	var r := Levels.parse(text)
+	expect(r["error"] == "" and r["levels"].size() == 70, "the saved file parses with the original rules")
+	expect(r["levels"][3]["author"] == "Tester" and r["levels"][3]["rows"][1].begins_with("%*!"),
+			"the saved file has the edits")
+	expect(text.begins_with(FileAccess.get_file_as_string("res://data/LEVELS.HL").left(200))
+			and text.ends_with("}\r\n\u001a") and not text.replace("\r\n", "").contains("\n"),
+			"the original's header, CR LF, ^Z")
+	var orig := LevelSet.from_text(FileAccess.get_file_as_string("res://data/LEVELS.HL"))
+	var parsed_orig: Array = Levels.parse(orig.to_text())["levels"]
+	expect(parsed_orig == Levels.parse(FileAccess.get_file_as_string("res://data/LEVELS.HL"))["levels"],
+			"the original levels survive the editor unchanged")
+	# the work is kept
+	main.ed = null
+	main._editor_load()
+	expect(main.ed.levels[3]["author"] == "Tester" and main.ed_name == "TEST.HL", "the editor's work is kept")
+	main.open_editor()
+	main.editor_play_set()
+	expect(data.levels.size() == 70 and main.settings.levels_name == "TEST.HL" and main.mode == "levels",
+			"play these levels")
+	main.use_original_levels()
+	main.open_levels("title")
+	main.sel = 3
+	key(KEY_E)
+	expect(main.mode == "confirm", "level select: e asks before replacing the editor's levels")
+	main._confirm(true)
+	expect(main.mode == "editor" and main.ed_i == 3 and main.ed.levels[3]["author"] != "Tester",
+			"the game's level in the editor")
+	main._editor_quit()
+	expect(main.mode == "title", "back to the title")
+	await process_frame
