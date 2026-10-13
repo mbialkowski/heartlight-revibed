@@ -50,6 +50,7 @@ const DEFAULT_PAD := {
 }
 
 var values := {}
+var levels_name := ""   # the loaded LEVELS.HL's file name; "" = the original levels
 var keys := {}     # action -> [keycode, keycode]
 var pad := {}      # action -> [button, button]
 
@@ -95,6 +96,7 @@ func load_file() -> void:
 		var v = cf.get_value("options", k, OPTIONS[k][0])
 		if OPTIONS[k].slice(1).has(v):
 			values[k] = v
+	levels_name = str(cf.get_value("levels", "name", ""))
 	for a in ACTIONS:      # unknown actions in an old file are ignored (R-C8)
 		var kv = cf.get_value("keys", a, null)
 		if kv is Array:
@@ -108,6 +110,7 @@ func save_file() -> void:
 	var cf := ConfigFile.new()
 	for k in values:
 		cf.set_value("options", k, values[k])
+	cf.set_value("levels", "name", levels_name)
 	for a in ACTIONS:
 		cf.set_value("keys", a, keys.get(a, []))
 		cf.set_value("pad", a, pad.get(a, []))

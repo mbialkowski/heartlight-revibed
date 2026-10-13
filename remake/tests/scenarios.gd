@@ -9,6 +9,8 @@ const Progress = preload("res://scripts/game/progress.gd")
 const Levels = preload("res://scripts/sim/levels.gd")
 const Sim = preload("res://scripts/sim/sim.gd")
 
+const CUSTOM := "user://custom_levels.hl"
+
 var failures := 0
 var checks := 0
 var main
@@ -22,7 +24,7 @@ func expect(cond: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	for f in [Settings.PATH, Progress.PATH]:
+	for f in [Settings.PATH, Progress.PATH, CUSTOM]:
 		if FileAccess.file_exists(f):
 			DirAccess.remove_absolute(f)
 	await process_frame
@@ -35,8 +37,11 @@ func _initialize() -> void:
 	test_players()
 	await test_game()
 	test_levels_menu()
+	test_smooth()
+	test_wide()
+	test_level_file()
 	test_settings_file()
-	for f in [Settings.PATH, Progress.PATH]:
+	for f in [Settings.PATH, Progress.PATH, CUSTOM]:
 		if FileAccess.file_exists(f):
 			DirAccess.remove_absolute(f)
 	print("scenarios: %d/%d checks passed" % [checks - failures, checks])
@@ -209,3 +214,69 @@ func test_settings_file() -> void:
 	s3.load_file()
 	expect(not s3.keys.has("no_such_action"), "unknown actions ignored (R-C8)")
 	expect(Levels.parse("{\n}\n")["error"] == "Not enough lines in level #1!", "level file errors")
+
+
+func test_smooth() -> void:
+	main.settings.set_value("smooth", true)
+	main.start_game(0)
+	main.sim = Sim.new(["*  @  ", "%%%%%%", "!"], 0, main.rand)
+	main.sim.tick_count = 1
+	ticks(1, "right")
+	expect(main.sim.moves.size() == 1 and main.screen.moving.size() == 1, "a step is one move")
+	var m: Array = main.screen.moving[0]
+	expect(m[1] == Vector2i(0, 0) and m[2] == Vector2i(16, 0), "from the old cell to the new one")
+	ticks(1, "right")
+	var pushed := false
+	for k in 3:                               # the push (odd ticks): dwarf and rock move together
+		ticks(1, "right")
+		pushed = pushed or main.screen.moving.size() == 2
+	expect(pushed, "a push moves two objects")
+	main.screen.draw_moving(0.5)
+	var hash_before: int = main.sim.state_hash()
+	main.screen.draw_moving(1.0)
+	expect(main.sim.state_hash() == hash_before, "drawing never changes the state")
+	ticks(1)
+	expect(main.screen.moving.is_empty(), "nothing moves, nothing slides")
+	main.settings.set_value("smooth", false)
+	ticks(1, "down")
+	expect(main.screen.moving.is_empty(), "option off: no sliding")
+	main.open_title()
+
+
+func test_wide() -> void:
+	var pic := Rect2(Vector2(240, 0), Vector2(1440, 1080))           # 1920x1080: 4:3 picture
+	expect(main.panel_width(Vector2(1920, 1080), pic) == 106, "16:9: panels 106 pixels wide")
+	expect(main.panel_width(Vector2(1440, 1080), Rect2(Vector2.ZERO, Vector2(1440, 1080))) == 0,
+			"4:3: no panels")
+	expect(main.panel_width(Vector2(1728, 1080), Rect2(Vector2(144, 0), Vector2(1440, 1080))) == 0,
+			"16:10: too narrow")
+	expect(main.panel_width(Vector2(1080, 1920), pic) == 0, "upright: no panels")
+	main.start_game(0)
+	main.draw_panels()
+	expect(main.panels[0].image.get_pixel(0, 390).r8 != 0, "panels drawn")
+	main.open_title()
+	expect(not main._panels_wanted(), "no panels in menus")
+
+
+func test_level_file() -> void:
+	var original_id: String = main.set_id
+	var n: int = root.get_node("Data").levels.size()
+	var bad := "{\n*!\n}\n".to_ascii_buffer()
+	expect(main.load_levels_file(bad, "bad.hl") == "Not enough lines in level #1!",
+			"a broken file is refused with the original's message")
+	expect(root.get_node("Data").levels.size() == n and main.set_id == original_id, "the levels stay")
+	var good := ""
+	for k in 2:
+		good += "author: tester\r\n{\r\n*  !\r\n" + "\r\n".repeat(11) + "}\r\n"
+	expect(main.load_levels_file(good.to_ascii_buffer(), "/tmp/MOJE.HL") == "", "a good file loads")
+	expect(root.get_node("Data").levels.size() == 2 and main.set_id != original_id, "its levels are played")
+	expect(main.mode == "levels" and main.settings.levels_name == "MOJE.HL", "level select opens")
+	expect(root.get_node("Data").levels[0]["author"] == "tester", "author read")
+	var s2 := Settings.new()
+	s2.load_file()
+	expect(s2.levels_name == "MOJE.HL" and FileAccess.file_exists(CUSTOM),
+			"the file is remembered")
+	main.use_original_levels()
+	expect(root.get_node("Data").levels.size() == n and main.set_id == original_id, "back to the original levels")
+	expect(not FileAccess.file_exists(CUSTOM), "the copy is removed")
+	main.open_title()

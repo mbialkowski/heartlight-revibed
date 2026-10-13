@@ -19,16 +19,20 @@ const Settings = preload("res://scripts/game/settings.gd")
 const Progress = preload("res://scripts/game/progress.gd")
 const S = preload("res://scripts/game/strings.gd")
 const TouchScript = preload("res://scripts/view/touch.gd")
+const Levels = preload("res://scripts/sim/levels.gd")
 
 const SLIDE_STEP := 16              # pixels per vertical retrace (NextLevelScroll 1633:14A3)
 const RETRACE := 1.0 / 70.0
 const ICON_TICKS := 0x30
 const UNDO_LIMIT := 1000
+const PANEL_MIN_W := 96             # side panels on wide screens, in text-layer pixels
+const PANEL_MAX_W := 320
+const CUSTOM_LEVELS := "user://custom_levels.hl"
 const TITLE_ITEMS := ["new", "continue", "levels", "editor", "player", "options", "controls",
 		"credits", "quit"]
 const OPTION_PAGES := {
 	"page_game": ["language", "push", "after", "undo", "speed", "map"],
-	"page_video": ["scale", "colours", "fullscreen"],
+	"page_video": ["scale", "colours", "smooth", "wide", "fullscreen"],
 	"page_sound": ["sound", "music_on", "music", "fx", "overlap"],
 	"page_controls": [],
 }
@@ -48,6 +52,12 @@ var over_mat: ShaderMaterial
 var display_rect := Rect2()
 var touch
 var portrait := false
+var panels := []                    # left and right TextLayer (wide screens, option "wide")
+var panel_rects := []
+var panel_mats := []
+var panels_on := false
+var _js_file_cb                     # web: keeps the JavaScript callbacks alive
+var _js_drop_cb
 
 var mode := "boot"
 var items := []                     # menu rows: {label, value, enabled, act, left, right}
@@ -103,6 +113,15 @@ func _ready() -> void:
 	over_mat = _material(text.texture, Vector2(640, 400))
 	display = _rect(base_mat, screen.texture)
 	overlay = _rect(over_mat, text.texture)
+	for i in 2:
+		var p := TextLayer.new(screen, PANEL_MIN_W, 400)
+		var m := _material(p.texture, Vector2(PANEL_MIN_W, 400))
+		panels.append(p)
+		panel_mats.append(m)
+		panel_rects.append(_rect(m, p.texture))
+	get_window().files_dropped.connect(_files_dropped)
+	_web_setup()
+	_load_saved_levels()
 	touch = TouchScript.new()
 	touch.main = self
 	add_child(touch)
@@ -162,6 +181,46 @@ func _layout() -> void:
 	over_mat.set_shader_parameter("out_scale", Vector2(size.x / 640.0, size.y / 400.0))
 	if touch != null:
 		touch.relayout()                            # anchored to the full window
+	_layout_panels()
+
+
+func panel_width(win: Vector2, picture: Rect2) -> int:
+	"""width of the side panels in text-layer pixels (the bands beside the picture), 0 when they
+	are too narrow for six glyphs"""
+	if win.y > win.x or picture.size.x <= 0.0:
+		return 0
+	var w := int(picture.position.x / (picture.size.x / 640.0))
+	return mini(w, PANEL_MAX_W) if w >= PANEL_MIN_W else 0
+
+
+func _panels_wanted() -> bool:
+	return settings.get_value("wide") and mode in ["play", "pause"] and sim != null \
+			and not (touch != null and touch.visible) \
+			and panel_width(get_viewport_rect().size, display_rect) > 0
+
+
+func _layout_panels() -> void:
+	if panel_rects.is_empty():
+		return
+	panels_on = _panels_wanted()
+	var w := panel_width(get_viewport_rect().size, display_rect)
+	var sc := display_rect.size / Vector2(640, 400)
+	for i in 2:
+		var r: TextureRect = panel_rects[i]
+		r.visible = panels_on
+		if not panels_on:
+			continue
+		if panels[i].width != w:
+			panels[i] = TextLayer.new(screen, w, 400)
+			r.texture = panels[i].texture
+			panel_mats[i].set_shader_parameter("idx_tex", panels[i].texture)
+			panel_mats[i].set_shader_parameter("src_size", Vector2(w, 400))
+		r.size = Vector2(w, 400) * sc
+		r.position = Vector2(display_rect.position.x - r.size.x if i == 0 else display_rect.end.x,
+				display_rect.position.y)
+		panel_mats[i].set_shader_parameter("out_scale", sc)
+	if panels_on:
+		draw_panels()
 
 
 func can_fullscreen() -> bool:
@@ -187,8 +246,8 @@ func apply_settings() -> void:
 	S.lang = settings.get_value("language")
 	palette.set_mono(settings.get_value("colours") == "mono")
 	var smooth: bool = settings.get_value("scale") == "smooth"
-	base_mat.set_shader_parameter("smooth_scale", smooth)
-	over_mat.set_shader_parameter("smooth_scale", smooth)
+	for m in [base_mat, over_mat] + panel_mats:
+		m.set_shader_parameter("smooth_scale", smooth)
 	audio.sound_on = settings.get_value("sound")
 	audio.music_on = settings.get_value("music_on")
 	audio.music_volume = float(settings.get_value("music")) / 100.0
@@ -506,6 +565,10 @@ func open_options(from: String) -> void:
 			"act": func(): _change_option(opt, 1),
 			"enabled": not (opt in ["music_on", "music", "fx", "overlap"] and not settings.get_value("sound"))
 					and not (opt == "fullscreen" and not can_fullscreen())})
+	if keys[page] == "page_game":
+		its.append({"label": t("o_levels"), "value": _levels_file_label(), "act": pick_levels_file})
+		if settings.levels_name != "":
+			its.append({"label": t("original_levels"), "act": _options_original_levels})
 	if keys[page] == "page_controls":
 		its.append({"label": t("open_controls"), "act": func(): open_controls("options")})
 	its.append({"label": t("back"), "act": _back})
@@ -840,8 +903,12 @@ func draw_ui() -> void:
 			_clear_base()
 			text.text_centered(t("quit_web"), 196, TextLayer.YELLOW)
 	if notice != "" and notice_t > 0.0:
-		text.fill(Rect2i(0, 380, 640, 12), 0)
-		text.text_centered(notice, 382, TextLayer.YELLOW)
+		var lines := _wrap(notice, 40)
+		var y := 392 - lines.size() * 12
+		text.fill(Rect2i(0, y - 2, 640, 400 - y + 2), 0)
+		for line in lines:
+			text.text_centered(line, y, TextLayer.YELLOW)
+			y += 12
 	text.update_texture()
 
 
@@ -985,6 +1052,8 @@ func _process(delta: float) -> void:
 	if touch.visible != (touch.wanted() and mode == "play"):
 		touch.refresh()
 		_layout()
+	if panels_on != _panels_wanted():
+		_layout_panels()
 	if notice_t > 0.0:
 		notice_t -= delta
 		if notice_t <= 0.0 and mode != "play":
@@ -999,6 +1068,10 @@ func _process(delta: float) -> void:
 				acc -= tick_s
 				n += 1
 				game_tick()
+			if mode == "play" and play_state == "play" and not screen.moving.is_empty():
+				screen.draw_moving(acc / tick_s)
+				_draw_icons()
+				screen.update_texture()
 		"fade_out":
 			if not palette.busy():
 				sim.setup(Data.levels[level]["rows"])
@@ -1149,21 +1222,227 @@ func _compose_slide(off: int) -> void:
 		render()
 
 
+func smooth_on() -> bool:
+	return settings.get_value("smooth") and not overview
+
+
 func render_into_screen() -> void:
+	screen.moving.clear()
 	if overview:
 		screen.draw_overview(sim)
 	else:
 		screen.draw_level(sim)
+		if smooth_on() and play_state == "play":
+			screen.collect_moves(sim)
+	_draw_icons()
+	screen.draw_status(sim.hearts_total, sim.hearts_total - sim.hearts_left, Data.levels.size(),
+			progress.solved(set_id).size(), progress.is_solved(set_id, level), level + 1)
+	screen.snap_base()
+
+
+func _draw_icons() -> void:
 	if icons > 0:
 		screen.draw_icons(settings.get_value("music_on"), settings.get_value("sound"),
 				settings.get_value("gamepad"))
-	screen.draw_status(sim.hearts_total, sim.hearts_total - sim.hearts_left, Data.levels.size(),
-			progress.solved(set_id).size(), progress.is_solved(set_id, level), level + 1)
 
 
 func render() -> void:
 	render_into_screen()
+	if not screen.moving.is_empty():
+		screen.draw_moving(0.0)
+		_draw_icons()
 	screen.update_texture()
+	if panels_on:
+		draw_panels()
+
+
+# wide screens: the side panels ----------------------------------------------------------------
+func draw_panels() -> void:
+	"""left: level number and author; right: hearts, solved levels and the option icons — the
+	original's status line and icons, readable beside the picture (plan 3). The panels are on the
+	menu layer's pixel grid; the bar at the bottom continues the status line."""
+	var bar := screen.glyph_index(")")
+	var l: TextLayer = panels[0]
+	var r: TextLayer = panels[1]
+	var w: int = l.width
+	var chars := w / 16
+	for p in panels:
+		p.fill(Rect2i(0, 0, w, 400), 0)
+		for x in range(0, w, 32):
+			p.glyph2x(bar, 0, x if p == r else w - 32 - x, 384)
+	l.text_centered(t("level"), 24, TextLayer.GREEN)
+	_big_centered(l, str(level + 1), 40, TextLayer.YELLOW)
+	var author: String = Data.levels[level]["author"]
+	if author != "":
+		l.text_centered(t("author"), 88, TextLayer.GREEN)
+		var y := 104
+		for line in _wrap(S.glyph_text(author), chars):
+			l.text_centered(line, y, TextLayer.BLUE)
+			y += 12
+	if settings.levels_name != "":
+		var y := 360 - 12 * _wrap(S.glyph_text(settings.levels_name.get_basename()), chars).size()
+		for line in _wrap(S.glyph_text(settings.levels_name.get_basename()), chars):
+			l.text_centered(line, y, TextLayer.BLUE)
+			y += 12
+	r.text_centered(t("hearts"), 24, TextLayer.GREEN)
+	r.text_centered("%d:%d" % [sim.hearts_total - sim.hearts_left, sim.hearts_total], 40, TextLayer.YELLOW)
+	r.glyph2x(screen.glyph_index(")" if progress.is_solved(set_id, level) else "("), 2, (w - 32) / 2, 72)
+	r.text_centered("%d:%d" % [progress.solved(set_id).size(), Data.levels.size()], 96, TextLayer.BLUE)
+	var on := [settings.get_value("music_on"), settings.get_value("sound"), settings.get_value("gamepad")]
+	for i in 3:
+		var x := (w - 40) / 2
+		var y := 280 + i * 28
+		r.glyph2x(screen.glyph_index(" "), 0, x + 8, y + 4)
+		r.glyph2x(screen.glyph_index("+" if on[i] else "-"), i, x, y)
+	for p in panels:
+		p.update_texture()
+
+
+func _big_centered(layer: TextLayer, s: String, y: int, colour: int) -> void:
+	var x := (layer.width - s.length() * 32) / 2
+	for i in s.length():
+		layer.glyph2x(screen.glyph_index(s[i]), colour, x + i * 32, y)
+
+
+static func _wrap(s: String, width: int) -> Array:
+	"""words to lines of at most `width` characters (longer words are cut)"""
+	var lines := []
+	var line := ""
+	var words := []
+	for w in s.split(" ", false):
+		while w.length() > width:
+			words.append(w.left(width))
+			w = w.substr(width)
+		words.append(w)
+	for w in words:
+		if line != "" and line.length() + 1 + w.length() > width:
+			lines.append(line)
+			line = ""
+		line = w if line == "" else line + " " + w
+	if line != "":
+		lines.append(line)
+	return lines
+
+
+# custom level files ----------------------------------------------------------------------------
+func _levels_file_label() -> String:
+	return t("v_original") if settings.levels_name == "" else S.glyph_text(settings.levels_name)
+
+
+func load_levels_file(bytes: PackedByteArray, file_name: String) -> String:
+	"""plays the levels of another LEVELS.HL (checked with the original's rules); returns the
+	error, or "" when loaded. Progress is kept per file (by its contents)."""
+	var text := bytes.get_string_from_ascii()
+	var r := Levels.parse(text)
+	if r["error"] != "":
+		notice = S.glyph_text("%s %d: %s" % [S.get_text("level_error"), r["line"], r["error"]])
+		notice_t = 4.0
+		if mode != "play":
+			draw_ui()
+		return r["error"]
+	var f := FileAccess.open(CUSTOM_LEVELS, FileAccess.WRITE)
+	if f != null:
+		f.store_buffer(bytes)
+		f.close()
+	settings.levels_name = file_name.get_file()
+	settings.save_file()
+	_use_levels(text)
+	return ""
+
+
+func use_original_levels() -> void:
+	settings.levels_name = ""
+	settings.save_file()
+	if FileAccess.file_exists(CUSTOM_LEVELS):
+		DirAccess.remove_absolute(CUSTOM_LEVELS)
+	_use_levels(FileAccess.get_file_as_string("res://data/LEVELS.HL"))
+
+
+func _options_original_levels() -> void:
+	use_original_levels()
+	open_options(back_to)
+
+
+func _use_levels(text: String) -> void:
+	Data.load_levels(text)
+	set_id = Progress.set_id_of(Data.levels_text)
+	sim = null                          # a game in progress (pause menu) ends here
+	if mode != "boot":
+		open_levels("title")
+
+
+func _load_saved_levels() -> void:
+	if settings.levels_name == "" or not FileAccess.file_exists(CUSTOM_LEVELS):
+		settings.levels_name = ""
+		return
+	var text := FileAccess.get_file_as_bytes(CUSTOM_LEVELS).get_string_from_ascii()
+	if Levels.parse(text)["error"] != "":
+		settings.levels_name = ""
+		return
+	Data.load_levels(text)
+	set_id = Progress.set_id_of(Data.levels_text)
+
+
+func pick_levels_file() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.hlPickFile && window.hlPickFile()", true)
+	elif DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
+		DisplayServer.file_dialog_show("LEVELS.HL", OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS), "",
+				false, DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, PackedStringArray(["*.hl, *.HL", "*"]),
+				_file_chosen)
+	else:
+		var d := FileDialog.new()
+		d.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+		d.access = FileDialog.ACCESS_FILESYSTEM
+		d.filters = PackedStringArray(["*.hl, *.HL"])
+		d.file_selected.connect(func(path): _file_chosen(true, PackedStringArray([path]), 0))
+		add_child(d)
+		d.popup_centered_ratio(0.8)
+
+
+func _file_chosen(ok: bool, paths: PackedStringArray, _filter: int) -> void:
+	if ok and paths.size() > 0:
+		load_levels_file(FileAccess.get_file_as_bytes(paths[0]), paths[0])
+
+
+func _files_dropped(files: PackedStringArray) -> void:
+	if files.size() > 0 and mode != "play":
+		load_levels_file(FileAccess.get_file_as_bytes(files[0]), files[0])
+
+
+func _web_setup() -> void:
+	"""web: a file picker and drag-and-drop of a LEVELS.HL on the page"""
+	if not OS.has_feature("web"):
+		return
+	_js_file_cb = JavaScriptBridge.create_callback(_web_file)
+	JavaScriptBridge.get_interface("window").hlFileCallback = _js_file_cb
+	JavaScriptBridge.eval("""
+		window.hlSendFile = function (f) {
+			f.arrayBuffer().then(function (b) {
+				var a = new Uint8Array(b), s = '';
+				for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+				window.hlFileCallback(f.name, btoa(s));
+			});
+		};
+		window.hlPickFile = function () {
+			var i = document.createElement('input');
+			i.type = 'file';
+			i.accept = '.hl,.HL,.txt';
+			i.onchange = function () { if (i.files.length) window.hlSendFile(i.files[0]); };
+			i.click();
+		};
+		document.addEventListener('dragover', function (e) { e.preventDefault(); });
+		document.addEventListener('drop', function (e) {
+			e.preventDefault();
+			if (e.dataTransfer.files.length) window.hlSendFile(e.dataTransfer.files[0]);
+		});
+	""", true)
+
+
+func _web_file(args: Array) -> void:
+	if mode == "play":
+		return
+	load_levels_file(Marshalls.base64_to_raw(str(args[1])), str(args[0]))
 
 
 # screenshots ---------------------------------------------------------------------------------

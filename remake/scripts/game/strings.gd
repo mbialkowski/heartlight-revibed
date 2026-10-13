@@ -55,6 +55,7 @@ const T := {
 		"c_remake": "remake heartlight revibed",
 		"c_remake2": "kod mit  dane cc by sa 2.5",
 		"level_error": "błąd w pliku poziomów",
+		"o_levels": "plik poziomów", "original_levels": "wróć do oryginalnych poziomów",
 	},
 	"en": {
 		"press_key": "press any key",
@@ -107,6 +108,7 @@ const T := {
 		"c_remake": "remake heartlight revibed",
 		"c_remake2": "code mit  data cc by sa 2.5",
 		"level_error": "error in the level file",
+		"o_levels": "level file", "original_levels": "back to the original levels",
 	},
 }
 

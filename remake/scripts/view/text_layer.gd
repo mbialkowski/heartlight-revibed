@@ -1,7 +1,8 @@
 extends RefCounted
 ## A 640x400 layer over the 320x200 screen for menus, in palette indices like the screen and
 ## drawn with the original's 16x8 font (font.ggs): the same glyph shape at half the size, 40
-## characters per line. Transparent where nothing is drawn.
+## characters per line. Transparent where nothing is drawn. Also used, narrower, for the side
+## panels of wide screens.
 
 const W := 640
 const H := 400
@@ -16,14 +17,18 @@ var font: Image
 var minis: Image
 var logo: Image
 var font_chars: Dictionary
+var width := W
+var height := H
 
 
-func _init(screen) -> void:
+func _init(screen, w := W, h := H) -> void:
+	width = w
+	height = h
 	font = screen.font
 	minis = screen.minis
 	logo = screen.logo
 	font_chars = screen.font_chars
-	image = Image.create(W, H, false, Image.FORMAT_RGBA8)
+	image = Image.create(width, height, false, Image.FORMAT_RGBA8)
 	clear()
 	texture = ImageTexture.create_from_image(image)
 
@@ -62,7 +67,7 @@ func text(s: String, x: int, y: int, colour := GREEN, opaque := false) -> int:
 
 
 func text_centered(s: String, y: int, colour := GREEN) -> void:
-	text(s, (W - s.length() * 16) / 2, y, colour)
+	text(s, (width - s.length() * 16) / 2, y, colour)
 
 
 func mini_level(sim, x: int, y: int) -> void:
@@ -81,3 +86,19 @@ func frame(r: Rect2i, index: int) -> void:
 	fill(Rect2i(r.position.x, r.end.y - 1, r.size.x, 1), index)
 	fill(Rect2i(r.position.x, r.position.y, 1, r.size.y), index)
 	fill(Rect2i(r.end.x - 1, r.position.y, 1, r.size.y), index)
+
+
+var _big := {}
+
+
+func glyph2x(index: int, row: int, x: int, y: int) -> void:
+	"""a glyph at twice the size (the size of the status line and the option icons)"""
+	if index < 0:
+		return
+	var key := index * 4 + row
+	if not _big.has(key):
+		var g := font.get_region(Rect2i((index % 16) * 16, (index / 16) * 24 + row * 8, 16, 8))
+		g.resize(32, 16, Image.INTERPOLATE_NEAREST)
+		_big[key] = g
+	var img: Image = _big[key]
+	image.blit_rect_mask(img, img, Rect2i(0, 0, 32, 16), Vector2i(x, y))

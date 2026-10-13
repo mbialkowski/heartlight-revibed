@@ -1,10 +1,11 @@
 # Heartlight: Revibed — the Godot 4 remake
 
-Work in progress, following [the plan](../docs/remake-plan.md). **M4 done**: all 70 levels with
+Work in progress, following [the plan](../docs/remake-plan.md). **M5 done**: all 70 levels with
 the original's rules (tick for tick), graphics (pixel for pixel), sounds and music; title, pause,
 options, controls with remapping, level select, three players with saving, credits, Polish and
 English; a web build (installable as an app, PWA) with touch controls for phones, held sideways or
-upright.
+upright; side panels on wide screens, smooth movement, undo and other level files (options, all off
+or as the original by default).
 
 | title | level select | play |
 |---|---|---|
@@ -15,6 +16,11 @@ upright.
 | phone, sideways | phone, upright |
 |---|---|
 | ![](../docs/images/remake/web_phone.png) | ![](../docs/images/remake/web_portrait.png) |
+
+Wide screen (option *szeroki ekran*): the level number, author, hearts, solved levels and the
+option icons beside the picture.
+
+![](../docs/images/remake/wide.png)
 
 ## Playing
 
@@ -38,6 +44,10 @@ Menus: arrows/WASD, Enter/Space, Esc/Backspace; gamepad d-pad/stick, A, B; mouse
 Touch (shown automatically on touch screens; STEROWANIE → DOTYK sets it on/off, size, opacity and
 left/right-handed layout): a 4-way pad, restart, undo (with the option), map, pause, full screen.
 
+Other levels: OPCJE → GRA → *plik poziomów* opens a `LEVELS.HL` (desktop: file dialog; web: file
+picker), or drop the file on the window. It is checked with the original's rules and messages, kept
+in `user://custom_levels.hl` until *wróć do oryginalnych poziomów*; progress is kept per file.
+
 Settings are saved in `user://settings.cfg`, the players in `user://players.json`.
 
 Texts use only the characters of the original's font (a–z, Polish letters, digits, `:` `.`), drawn
@@ -60,8 +70,8 @@ on a 640x400 layer over the 320x200 screen: the original's glyphs at half size, 
 | `scripts/view/screen.gd` | the 320x200 screen in palette indices: cells, status line, icons, overview |
 | `scripts/view/touch.gd` | on-screen pad and buttons (multi-touch) |
 | `scripts/view/palette.gd`, `palette.gdshader` | palette (fades, VGA mono) and sharp-bilinear scaling |
-| `scripts/main.gd` | the screens and the play loop (tick, restart fade, level slide, undo) |
-| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (48 checks: menus, options, remapping, players, saving, undo, level change), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
+| `scripts/main.gd` | the screens and the play loop (tick, restart fade, level slide, undo), side panels, level files |
+| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (69 checks: menus, options, remapping, players, saving, undo, level change, smooth movement, side panels, level files), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, and wide with a dropped level file, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
 
 ## Running the tests
 

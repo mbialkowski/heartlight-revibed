@@ -47,6 +47,8 @@ var activity := 1          # DS:60D9
 var dir := 0               # DS:60DB
 var solved := false
 var sounds: Array[String] = []   # sounds started during the last tick
+var moves := {}            # dst cell -> src cell of the objects moved during the last tick; only
+                           # for drawing (smooth movement), the rules never read it
 
 
 func _init(p_rows: Array, p_level_index := 0, p_rand = null, p_tick_count := 0) -> void:
@@ -108,6 +110,7 @@ func setup(p_rows: Array) -> void:
 			state[si] = s
 			frame[si] = f
 	hearts_total = hearts_left
+	moves.clear()
 	game_state = PLAYING
 	death_timer = 0
 	exit_timer = 0
@@ -117,7 +120,14 @@ func setup(p_rows: Array) -> void:
 	solved = false
 
 
+func _moved(src: int, dst: int) -> void:
+	var origin: int = moves.get(src, src)
+	moves.erase(src)
+	moves[dst] = origin
+
+
 func _move(src: int, dst: int, new_state := -1) -> void:
+	_moved(src, dst)
 	type[dst] = type[src]
 	state[dst] = state[src] if new_state < 0 else new_state
 	frame[dst] = frame[src]
@@ -136,6 +146,7 @@ func _clear(i: int) -> void:
 # 1633:0C4D GameTick
 func tick(direction := 0, escape := false) -> void:
 	sounds.clear()
+	moves.clear()
 	activity = 0
 	dir = direction
 	if escape and death_timer == 0 and exit_timer == 0:
@@ -226,6 +237,7 @@ func _hero_think(si: int) -> void:
 				and d != -W and d != W:
 			if tick_count & 1:
 				var j := si + 2 * d
+				_moved(di, j)
 				type[j] = type[di]
 				state[j] = state[di]
 				frame[j] = frame[di]
@@ -265,6 +277,7 @@ func _hero_think(si: int) -> void:
 
 
 func _hero_to(si: int, di: int, f: int) -> void:
+	_moved(si, di)
 	type[di] = DWARF
 	state[di] = 1
 	frame[di] = f
@@ -415,6 +428,7 @@ func _balloon_think(di: int) -> void:
 			if type[di - 2 * W] == EMPTY:
 				var j := di - 2 * W
 				var k := di - W
+				_moved(k, j)
 				type[j] = type[k]
 				state[j] = state[k]
 				frame[j] = frame[k]
@@ -501,3 +515,4 @@ func restore(snap: Dictionary) -> void:
 	tick_count = snap["tick_count"]
 	solved = snap["solved"]
 	rand.s = snap["rand"]
+	moves.clear()

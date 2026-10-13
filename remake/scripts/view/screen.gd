@@ -14,6 +14,8 @@ var font: Image             # 16 x 4 cells of 16x24 (three colour rows of 16x8)
 var logo: Image
 var chaos: Image
 var font_chars: Dictionary  # char -> glyph index (FontIndex 17CF:000B)
+var moving := []            # smooth movement: [slot, from, to] (pixels) of the last tick's moves
+var base: Image             # the picture without the moving objects
 
 
 func _init(font_map: Dictionary) -> void:
@@ -80,6 +82,44 @@ func draw_level(sim) -> void:
 	for y in 12:
 		for x in 20:
 			sprite(sim.sprite(x, y), x * 16, y * 16)
+
+
+## smooth movement (option): the objects moved by the last tick are drawn sliding from their old
+## cell to the new one; the cells under them are black (an object only moves into an empty or a
+## grass cell and leaves an empty one). The rules are untouched: this only draws sim.moves.
+const MOVERS := [4, 5, 6, 8, 10]     # rock, heart, bomb, dwarf, balloon
+
+
+func collect_moves(sim) -> void:
+	moving.clear()
+	for dst in sim.moves:
+		var t: int = sim.type[dst]
+		if not MOVERS.has(t):
+			continue
+		var src: int = sim.moves[dst]
+		var to := Vector2i(dst % 22 - 1, dst / 22 - 1) * 16
+		var from := Vector2i(src % 22 - 1, src / 22 - 1) * 16
+		moving.append([sim.SPRITE_BASE[t] + sim.frame[dst], from, to])
+		image.fill_rect(Rect2i(to, Vector2i(16, 16)), Color(0, 0, 0, 1))
+
+
+func snap_base() -> void:
+	base = image.duplicate() if not moving.is_empty() else null
+
+
+func draw_moving(f: float) -> void:
+	"""f: 0 = at the old cells (just after the tick), 1 = at the new ones"""
+	if base == null:
+		return
+	for m in moving:
+		var r := Rect2i(m[1], Vector2i(16, 16)).merge(Rect2i(m[2], Vector2i(16, 16)))
+		image.blit_rect(base, r, r.position)
+	for m in moving:
+		var from: Vector2i = m[1]
+		var to: Vector2i = m[2]
+		var p := Vector2i((Vector2(from) + Vector2(to - from) * clampf(f, 0.0, 1.0)).round())
+		var slot: int = m[0]
+		image.blit_rect_mask(sprites, sprites, Rect2i((slot % 8) * 16, (slot / 8) * 16, 16, 16), p)
 
 
 # 1633:115B DrawMap8 (F1): 8x8 sprites at (16, 88) over the logo

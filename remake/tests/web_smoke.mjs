@@ -66,6 +66,23 @@ await run("desktop", { viewport: { width: 1280, height: 800 } }, async (page) =>
   await page.screenshot({ path: `${out}/desktop_pause.png` });
 });
 
+// wide screen: drop a level file on the page, play its first level with the side panels
+await run("wide", { viewport: { width: 1600, height: 900 } }, async (page) => {
+  await page.keyboard.press("Enter");             // Polski
+  await sleep(1500);
+  const level = "author: smoke test\r\n{\r\n*  $ !\r\n" + "\r\n".repeat(11) + "}\r\n";
+  await page.evaluate((text) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([text], "SMOKE.HL"));
+    document.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, level.repeat(3));
+  await sleep(1500);
+  await page.screenshot({ path: `${out}/wide_levels.png` });
+  await page.keyboard.press("Enter");             // play level 1 of the file
+  await sleep(2000);
+  await page.screenshot({ path: `${out}/wide_game.png` });
+});
+
 const phone = { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 };
 await run("phone", phone, async (page) => {
   await page.touchscreen.tap(420, 200);           // first screen

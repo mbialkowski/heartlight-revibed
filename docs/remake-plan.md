@@ -1,7 +1,7 @@
 # Heartlight: Revibed — remake implementation plan
 
-Status: **M0–M4 done** (rules verified against the original; ported to Godot, 280/280 golden
-traces; playable on desktop with menus, options, controls and saving; rendering pixel-exact; web build with touch controls for phones) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
+Status: **M0–M5 done** (rules verified against the original; ported to Godot, 280/280 golden
+traces; playable on desktop with menus, options, controls and saving; rendering pixel-exact; web build with touch controls for phones; widescreen panels, smooth movement, undo, other level files) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
 default, original behaviour by default, level editor in the first release. Built on the reverse engineering in
 [`reverse-engineering/`](reverse-engineering/README.md) and modelled on the
 [lazarus-revibed](https://github.com/mbialkowski/lazarus-revibed) remake (same engine, same layout,
@@ -57,8 +57,8 @@ Autorzy/Credits screen and in the README.
   option for free.
 * **Sharp-bilinear** scaling (crisp, even pixels at any size) or nearest — option *Skalowanie*.
 * **Widescreen**: the 320×192 play-field stays the centre; on wider screens the side bands show a
-  frame with the level number, author, hearts left, a mini-map (the original's 8×8 sprites) and the
-  option icons; on 4:3 it looks exactly like the original (status line at the bottom).
+  frame with the level number, author, hearts, solved levels and the option icons (a mini-map was
+  dropped: the whole level is always on screen); on 4:3 it looks exactly like the original (status line at the bottom).
 * **Smooth movement** (option, default off = original look): objects slide between cells during
   the 112.6 ms tick; the logical state is always the one of the last tick, so deaths/explosions stay
   on the same ticks.
@@ -238,7 +238,7 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 | M2 ✓ | playable core: indexed renderer, status line, input, tick loop, restart/next level, sounds, music | level 1–70 playable on desktop; level 1 renders pixel-exact |
 | M3 ✓ | menus (4.2–4.3), options (4.4), controls screen with remapping (4.5), players and saving, level select, credits, PL/EN | R-M1…R-M5 and R-C1…R-C8 met; every screen reachable by keyboard, gamepad, mouse and touch |
 | M4 ✓ | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
-| M5 | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
+| M5 ✓ | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
 | M6 | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
 | M7 | polish: screenshots, README, solutions collected for all 70 levels | first release |
 
