@@ -1,0 +1,54 @@
+# Tests the Godot remake. (The web export and GitHub Pages deployment arrive with milestone M4.)
+name: Remake tests
+
+on:
+  push:
+    paths: ["remake/**", "tools/**", "tests/**", ".github/workflows/remake.yml"]
+  pull_request:
+    paths: ["remake/**", "tools/**", "tests/**", ".github/workflows/remake.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remake-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python tests and generated data up to date
+        run: |
+          pip install -r tools/requirements.txt
+          python3 tests/test_sim.py
+          python3 tools/build_remake_data.py original/ /tmp/data
+          python3 tools/make_golden_traces.py original/LEVELS.HL tests/golden_scenarios.json /tmp/data/golden_traces.json
+          for f in /tmp/data/*.json /tmp/data/LEVELS.HL; do cmp "$f" "remake/data/$(basename "$f")"; done
+
+      - name: Install Godot
+        run: |
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          curl -sSLo godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          rm godot.zip
+
+      - name: Import the project
+        run: godot --headless --path remake --import || true
+
+      - name: Godot tests (scripts, rules, golden traces)
+        run: |
+          godot --headless --path remake --script res://tests/check.gd
+          godot --headless --path remake --script res://tests/rules.gd
+          godot --headless --path remake --script res://tests/golden.gd

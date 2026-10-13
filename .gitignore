@@ -4,3 +4,5 @@ original/PLAYER*.STT
 original/player*.stt
 original/PIC*.BMP
 original/INFO.TXT
+remake/.godot/
+remake/build/

@@ -1,6 +1,7 @@
 # Heartlight: Revibed — remake implementation plan
 
-Status: **plan**, nothing implemented yet. Decisions confirmed (section 10): Godot 4.7, Polish by
+Status: **M0 and M1 done** (rules verified against the original; rules ported to Godot, 280/280
+golden traces) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
 default, original behaviour by default, level editor in the first release. Built on the reverse engineering in
 [`reverse-engineering/`](reverse-engineering/README.md) and modelled on the
 [lazarus-revibed](https://github.com/mbialkowski/lazarus-revibed) remake (same engine, same layout,
@@ -232,8 +233,8 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 
 | # | deliverable | done when |
 |---|---|---|
-| M0 | finish the verification: the 6 remaining DOSBox mismatches (levels 20, 21, 25, 26, 42, 50) explained and `hl_sim.py` fixed if needed | 70/70 with moves |
-| M1 | `build_remake_data.py`, `make_golden_traces.py`; Godot project skeleton; `sim.gd` port | `golden.gd` passes on all traces |
+| M0 ✓ | finish the verification against the original in DOSBox | 70/70 with moves |
+| M1 ✓ | `build_remake_data.py`, `make_golden_traces.py`; Godot project skeleton; `sim.gd` port | `golden.gd` passes on all traces (280/280, 91 000 ticks) |
 | M2 | playable core: indexed renderer, status line, input, tick loop, restart/next level, sounds, music | level 1–70 playable on desktop |
 | M3 | menus (4.2–4.3), options (4.4), controls screen with remapping (4.5), players and saving, level select, credits, PL/EN | R-M1…R-M5 and R-C1…R-C8 met; every screen reachable by keyboard, gamepad, mouse and touch |
 | M4 | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
