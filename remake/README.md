@@ -1,24 +1,39 @@
 # Heartlight: Revibed — the Godot 4 remake
 
-Work in progress, following [the plan](../docs/remake-plan.md). **M2 done**: all 70 levels are
-playable on desktop with the original's rules (tick for tick), graphics (pixel for pixel), status
-line, sounds and music. Menus, options and saving come with M3.
+Work in progress, following [the plan](../docs/remake-plan.md). **M3 done**: all 70 levels with
+the original's rules (tick for tick), graphics (pixel for pixel), sounds and music; title, pause,
+options, controls with remapping, level select, three players with saving, credits, Polish and
+English. Web build, touch and phones come with M4.
 
-![Level 1](../docs/images/remake/level01_m2.png)
+| title | level select | play |
+|---|---|---|
+| ![](../docs/images/remake/title.png) | ![](../docs/images/remake/levels.png) | ![](../docs/images/remake/level01_m2.png) |
+| options | controls | pause |
+| ![](../docs/images/remake/options.png) | ![](../docs/images/remake/controls.png) | ![](../docs/images/remake/pause.png) |
 
 ## Playing
 
-`godot --path remake` (Godot 4.7.2), or `godot --path remake -- --level=N` to start at level N.
+`godot --path remake` (Godot 4.7.2); `-- --level=N` starts playing level N at once.
 
-| key | |
-|---|---|
-| arrows, WASD (gamepad: d-pad, stick) | move / push |
-| Esc, R | restart the level (the dwarf explodes, as in the original) |
-| Space + ←/→, PgUp/PgDn | previous / next level |
-| F1, Tab | overview map |
-| F6 / F7 / F8 | music / sound / gamepad on-off (with the original's icons) |
-| F11 | full screen |
-| F10 | quit (until the title screen exists) |
+Default keys (all remappable in STEROWANIE / CONTROLS):
+
+| action | keyboard | gamepad |
+|---|---|---|
+| move / push | arrows, WASD | d-pad, left stick |
+| restart the level (the original's Esc) | Esc, R | Back |
+| undo (option *cofanie*, off by default) | Backspace, Z | LB |
+| previous / next level | Space + ←/→, PgUp / PgDn | |
+| overview map | F1, Tab | Y |
+| music / sound / gamepad on-off | F6 / F7 / F8 | |
+| pause menu | P | Start |
+| back to the title | F10 | |
+| full screen | F11 | |
+
+Menus: arrows/WASD, Enter/Space, Esc/Backspace; gamepad d-pad/stick, A, B; mouse and touch.
+Settings are saved in `user://settings.cfg`, the players in `user://players.json`.
+
+Texts use only the characters of the original's font (a–z, Polish letters, digits, `:` `.`), drawn
+on a 640x400 layer over the 320x200 screen: the original's glyphs at half size, 40 per line.
 
 ## What is here
 
@@ -30,11 +45,14 @@ line, sounds and music. Menus, options and saving come with M3.
 | `scripts/sim/rand.gd` | Borland `rand()` (start frames of hearts/balloons, heart-landing sound) |
 | `scripts/game/data.gd` | autoload `Data`: loads the bundle |
 | `scripts/game/audio.gd` | the original's two channels: music loop (197 blocks) and effects |
-| `scripts/game/controls.gd` | actions, default bindings, the original's input latch and priority |
+| `scripts/game/settings.gd` | options, bindings (swap on conflict, defaults), input map |
+| `scripts/game/progress.gd` | three players, solved levels per level file, current level |
+| `scripts/game/strings.gd` | Polish and English texts |
+| `scripts/view/text_layer.gd` | the 640x400 menu layer |
 | `scripts/view/screen.gd` | the 320x200 screen in palette indices: cells, status line, icons, overview |
 | `scripts/view/palette.gd`, `palette.gdshader` | palette (fades, VGA mono) and sharp-bilinear scaling |
-| `scripts/main.gd` | the play screen: tick loop, restart fade, level slide |
-| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
+| `scripts/main.gd` | the screens and the play loop (tick, restart fade, level slide, undo) |
+| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (48 checks: menus, options, remapping, players, saving, undo, level change), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
 
 ## Running the tests
 

@@ -1,203 +1,1101 @@
 extends Node2D
-## The play screen (milestone M2): the original's PlayGame loop (docs 3.3) — one tick every
-## 112.6 ms, restart with a fade when the dwarf has died, slide to the next/previous level,
-## F1 overview, F6/F7/F8 with the option icons. Menus, options and saving arrive with M3.
+## Heartlight: Revibed — screens and game flow (docs/remake-plan.md sections 4 and 6).
 ##
-## Command-line (after "--"): --level=N  start level;  --shots=DIR  write a few screenshots
-## while playing --moves=STRING (one character per tick: . L R U D E) and quit.
+## The play screen is the original's PlayGame loop (docs 3.3): one tick every 112.6 ms, a restart
+## with a fade when the dwarf has died, a slide to the next/previous level, F1 overview, F6/F7/F8
+## with the option icons. Around it: first screen, title, pause, options, controls (remapping),
+## level select, players, credits — all usable with keyboard, gamepad, mouse and touch (R-M1).
+##
+## Command-line (after "--"): --level=N  start playing level N;  --shots=DIR  screenshots of the
+## screens and a short game (--moves=STRING: one character per tick . L R U D E), then quit.
 
 const Sim = preload("res://scripts/sim/sim.gd")
 const Rand = preload("res://scripts/sim/rand.gd")
 const Screen = preload("res://scripts/view/screen.gd")
+const TextLayer = preload("res://scripts/view/text_layer.gd")
 const Palette = preload("res://scripts/view/palette.gd")
-const Controls = preload("res://scripts/game/controls.gd")
 const AudioScript = preload("res://scripts/game/audio.gd")
+const Settings = preload("res://scripts/game/settings.gd")
+const Progress = preload("res://scripts/game/progress.gd")
+const S = preload("res://scripts/game/strings.gd")
 
 const SLIDE_STEP := 16              # pixels per vertical retrace (NextLevelScroll 1633:14A3)
 const RETRACE := 1.0 / 70.0
 const ICON_TICKS := 0x30
+const UNDO_LIMIT := 1000
+const TITLE_ITEMS := ["new", "continue", "levels", "editor", "player", "options", "controls",
+		"credits", "quit"]
+const OPTION_PAGES := {
+	"page_game": ["language", "push", "after", "undo", "speed", "map"],
+	"page_video": ["scale", "colours", "fullscreen"],
+	"page_sound": ["sound", "music_on", "music", "fx", "overlap"],
+	"page_controls": [],
+}
+const KEYS_PER_TICK := ["left", "right", "up", "down", "restart", "undo", "prev_level", "next_level"]
 
+var settings := Settings.new()
+var progress := Progress.new()
 var screen: Screen
+var text: TextLayer
 var palette: Palette
-var controls := Controls.new()
 var audio
 var display: TextureRect
+var overlay: TextureRect
+var base_mat: ShaderMaterial
+var over_mat: ShaderMaterial
+var display_rect := Rect2()
+
+var mode := "boot"
+var items := []                     # menu rows: {label, value, enabled, act, left, right}
+var sel := 0
+var rows := []                      # Rect2i per row (text layer coordinates), for mouse and touch
+var back_to := "title"              # where options / controls / levels return to
+var page := 0                       # options page, controls tab, level-select page
+var confirm_text := ""
+var confirm_yes: Callable
+var confirm_no: Callable
+var rebind_action := ""
+var notice := ""
+var notice_t := 0.0
+var name_edit := ""
+var credits_t := 0.0
+var title_t := 0.0
+
+# game
 var sim: Sim
 var rand := Rand.new(randi() & 0xFFFF)
 var level := 0
-var solved := {}                    # level index -> true (saving arrives with M3)
+var set_id := ""
 var tick_s := 0.11264
 var acc := 0.0
-var mode := "play"                  # play, fade_out, fade_in, slide
+var play_state := "play"            # play, fade_out, fade_in, slide
 var overview := false
-var music_on := true
-var sound_on := true
-var gamepad_on := false
-var icons := ICON_TICKS
+var icons := 0
 var slide_from: Image
 var slide_dir := 1
 var slide_t := 0.0
 var tick_count := 0                 # carried over between levels like DS:60DD
+var latched := {}
+var undo_stack := []
+
+# screenshots / automatic test
 var shots_dir := ""
 var shot_moves := ""
 var shot_tick := 0
 
 
 func _ready() -> void:
-	Controls.install()
+	settings.load_file()
+	progress.load_file()
+	set_id = Progress.set_id_of(Data.levels_text)
 	tick_s = float(Data.game["tick_seconds"])
 	screen = Screen.new(Data.game["font_chars"])
+	text = TextLayer.new(screen)
 	palette = Palette.new(Data.palette, Data.palette_mono)
 	audio = AudioScript.new()
 	add_child(audio)
 	audio.setup(Data.game)
-	display = TextureRect.new()
-	display.texture = screen.texture
-	display.stretch_mode = TextureRect.STRETCH_SCALE
-	display.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://scripts/view/palette.gdshader")
-	mat.set_shader_parameter("idx_tex", screen.texture)
-	mat.set_shader_parameter("pal_tex", palette.texture)
-	display.material = mat
-	add_child(display)
+	base_mat = _material(screen.texture, Vector2(320, 200))
+	over_mat = _material(text.texture, Vector2(640, 400))
+	display = _rect(base_mat, screen.texture)
+	overlay = _rect(over_mat, text.texture)
 	get_viewport().size_changed.connect(_layout)
+	apply_settings()
+	var start_level := -1
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--level="):
-			level = clampi(int(arg.substr(8)) - 1, 0, Data.levels.size() - 1)
+			start_level = clampi(int(arg.substr(8)) - 1, 0, Data.levels.size() - 1)
 		elif arg.begins_with("--shots="):
 			shots_dir = arg.substr(8)
 		elif arg.begins_with("--moves="):
 			shot_moves = arg.substr(8)
-	start_level(level)
-	audio.play_music()
 	_layout()
+	if shots_dir != "":
+		_screens_tour()
+	elif start_level >= 0:
+		start_game(start_level)
+	elif OS.has_feature("web") or not FileAccess.file_exists(Settings.PATH):
+		open_first()
+	else:
+		open_title()
+
+
+func _material(tex: Texture2D, size: Vector2) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://scripts/view/palette.gdshader")
+	m.set_shader_parameter("idx_tex", tex)
+	m.set_shader_parameter("pal_tex", palette.texture)
+	m.set_shader_parameter("src_size", size)
+	return m
+
+
+func _rect(mat: ShaderMaterial, tex: Texture2D) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = tex
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	r.material = mat
+	add_child(r)
+	return r
 
 
 func _layout() -> void:
 	"""the 320x200 picture at the 4:3 shape of a VGA monitor (pixels 1.2 times taller), centred"""
 	var win := get_viewport_rect().size
 	var scale := minf(win.x / 320.0, win.y / 240.0)
-	var size := Vector2(320.0 * scale, 240.0 * scale)
-	display.position = ((win - size) / 2.0).floor()
-	display.size = size.floor()
-	display.material.set_shader_parameter("out_scale", Vector2(size.x / 320.0, size.y / 200.0))
+	var size := Vector2(320.0 * scale, 240.0 * scale).floor()
+	display_rect = Rect2(((win - size) / 2.0).floor(), size)
+	for r in [display, overlay]:
+		r.position = display_rect.position
+		r.size = display_rect.size
+	base_mat.set_shader_parameter("out_scale", Vector2(size.x / 320.0, size.y / 200.0))
+	over_mat.set_shader_parameter("out_scale", Vector2(size.x / 640.0, size.y / 400.0))
+
+
+func to_text_coords(p: Vector2) -> Vector2:
+	return (p - display_rect.position) / display_rect.size * Vector2(640, 400)
+
+
+# settings ------------------------------------------------------------------------------------
+func apply_settings() -> void:
+	S.lang = settings.get_value("language")
+	palette.set_mono(settings.get_value("colours") == "mono")
+	var smooth: bool = settings.get_value("scale") == "smooth"
+	base_mat.set_shader_parameter("smooth_scale", smooth)
+	over_mat.set_shader_parameter("smooth_scale", smooth)
+	audio.sound_on = settings.get_value("sound")
+	audio.music_on = settings.get_value("music_on")
+	audio.music_volume = float(settings.get_value("music")) / 100.0
+	audio.fx_volume = float(settings.get_value("fx")) / 100.0
+	audio.overlap_always = settings.get_value("overlap") == "always"
+	audio.apply_volumes()
+	if not audio.sound_on:
+		audio.stop_all()
+	settings.apply_input_map()
+	if not OS.has_feature("web") and DisplayServer.get_name() != "headless":
+		var full: bool = settings.get_value("fullscreen")
+		var is_full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		if full != is_full:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if full
+					else DisplayServer.WINDOW_MODE_WINDOWED)
+	tick_s = float(Data.game["tick_seconds"]) * 100.0 / float(settings.get_value("speed"))
+
+
+func save_all() -> void:
+	settings.save_file()
+	progress.save_file()
+
+
+func t(key: String) -> String:
+	return S.glyph_text(S.get_text(key))
+
+
+# input -----------------------------------------------------------------------------------------
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and mode == "rebind":
+		_rebind_key(event)
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventJoypadButton and event.pressed and mode == "rebind":
+		_rebind_pad(event)
+		return
+	if event.is_action_pressed("fullscreen") and mode != "rename":
+		settings.set_value("fullscreen", not settings.get_value("fullscreen"))
+		apply_settings()
+		settings.save_file()
+		return
+	if mode == "play":
+		for a in KEYS_PER_TICK:
+			if event.is_action_pressed(a, false, true):
+				latched[a] = true
+		if event.is_action_pressed("pause"):
+			open_pause()
+		return
+	if mode == "rename":
+		_rename_input(event)
+		return
+	if event is InputEventMouseMotion or event is InputEventMouseButton or event is InputEventScreenTouch:
+		_pointer(event)
+		return
+	for a in ["ui_up", "ui_down", "ui_left", "ui_right", "ui_accept", "ui_cancel"]:
+		if event.is_action_pressed(a, true):
+			ui(a)
+			get_viewport().set_input_as_handled()
+			return
+	if event is InputEventKey and event.pressed and not event.echo:
+		_key_shortcut(event)
+
+
+func _key_shortcut(e: InputEventKey) -> void:
+	if mode == "first" or mode == "credits":
+		ui("ui_accept")
+	elif mode == "confirm":
+		var c := char(e.unicode).to_lower() if e.unicode > 0 else ""
+		if c == "y" or c == "t":
+			_confirm(true)
+		else:
+			_confirm(false)
+
+
+func _pointer(event: InputEvent) -> void:
+	var pos: Vector2 = event.position
+	var p := to_text_coords(pos)
+	var hit := -1
+	for i in rows.size():
+		if rows[i] is Rect2i and Rect2(rows[i]).has_point(p):
+			hit = i
+	if event is InputEventMouseMotion:
+		if hit >= 0 and hit != sel and _enabled(hit):
+			sel = hit
+			draw_ui()
+		return
+	var pressed: bool = event.pressed
+	if not pressed:
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		ui("ui_cancel")
+		return
+	if mode in ["first", "credits"] and hit < 0:
+		ui("ui_accept")
+		return
+	if mode == "confirm":
+		_confirm(hit == 0)
+		return
+	if hit >= 0 and _enabled(hit):
+		sel = hit
+		ui("ui_accept")
+
+
+func _enabled(i: int) -> bool:
+	return i < items.size() and items[i].get("enabled", true)
+
+
+func ui(a: String) -> void:
+	"""menu navigation: the same for keyboard, gamepad, mouse and touch"""
+	match mode:
+		"confirm":
+			if a == "ui_accept":
+				_confirm(sel == 0)
+			elif a == "ui_cancel":
+				_confirm(false)
+			elif a in ["ui_left", "ui_right", "ui_up", "ui_down"]:
+				sel = 1 - sel
+				draw_ui()
+			return
+		"levels":
+			_levels_ui(a)
+			return
+		"credits":
+			if a in ["ui_accept", "ui_cancel"]:
+				_back()
+			return
+	if items.is_empty():
+		return
+	match a:
+		"ui_up", "ui_down":
+			var step := -1 if a == "ui_up" else 1
+			var n := items.size()
+			for k in n:
+				sel = (sel + step + n) % n
+				if _enabled(sel):
+					break
+			audio.play("key")
+		"ui_left", "ui_right":
+			var it: Dictionary = items[sel]
+			var fn = it.get("left" if a == "ui_left" else "right")
+			if fn is Callable:
+				fn.call()
+				audio.play("key")
+			elif mode == "title":
+				sel = (sel + (4 if a == "ui_right" else -4) + items.size()) % items.size()
+				if not _enabled(sel):
+					sel = 0
+		"ui_accept":
+			var fn = items[sel].get("act")
+			if fn is Callable and _enabled(sel):
+				audio.play("key")
+				fn.call()
+				return
+		"ui_cancel":
+			_back()
+			return
+	draw_ui()
+
+
+func _back() -> void:
+	match mode:
+		"title":
+			open_quit()
+		"pause":
+			resume()
+		"options", "controls", "player", "credits", "levels":
+			save_all()
+			if back_to == "pause":
+				open_pause()
+			else:
+				open_title()
+		"first":
+			ui("ui_accept")
+		_:
+			open_title()
+
+
+# screens ---------------------------------------------------------------------------------------
+func set_menu(new_mode: String, new_items: Array, new_sel := 0) -> void:
+	mode = new_mode
+	items = new_items
+	sel = clampi(new_sel, 0, maxi(items.size() - 1, 0))
+	if not _enabled(sel):
+		for i in items.size():
+			if _enabled(i):
+				sel = i
+				break
+	draw_ui()
+
+
+func open_first() -> void:
+	set_menu("first", [
+		{"label": "polski", "act": func(): _choose_language("pl")},
+		{"label": "english", "act": func(): _choose_language("en")},
+	], 0 if settings.get_value("language") == "pl" else 1)
+
+
+func _choose_language(l: String) -> void:
+	settings.set_value("language", l)
+	apply_settings()
+	settings.save_file()
+	open_title()
+
+
+func open_title(new_sel := 0) -> void:
+	audio.play_music(true)
+	palette.level = 1.0
+	palette.fade(1.0, 0.01)
+	base_mat.set_shader_parameter("dim", 1.0)
+	var its := []
+	for k in TITLE_ITEMS:
+		var it := {"id": k, "label": t(k)}
+		match k:
+			"new": it["act"] = _new_game
+			"continue":
+				it["act"] = func(): start_game(progress.level(set_id))
+				it["enabled"] = progress.started(set_id)
+			"levels": it["act"] = func(): open_levels("title")
+			"editor": it["enabled"] = false        # M6
+			"player": it["act"] = open_player
+			"options": it["act"] = func(): open_options("title")
+			"controls": it["act"] = func(): open_controls("title")
+			"credits": it["act"] = open_credits
+			"quit": it["act"] = open_quit
+		its.append(it)
+	set_menu("title", its, new_sel if new_sel else (1 if progress.started(set_id) else 0))
+
+
+func _new_game() -> void:
+	if progress.started(set_id):
+		open_confirm(t("new_q"), _new_game_yes, func(): open_title(0))
+	else:
+		start_game(0)
+
+
+func _new_game_yes() -> void:
+	progress.reset_progress(set_id)
+	progress.save_file()
+	start_game(0)
+
+
+func open_quit() -> void:
+	if OS.has_feature("web"):
+		mode = "bye"
+		items = []
+		draw_ui()
+		return
+	open_confirm(t("quit_q"), func(): get_tree().quit(), func(): open_title(TITLE_ITEMS.find("quit")))
+
+
+func open_confirm(question: String, yes: Callable, no: Callable) -> void:
+	confirm_text = question
+	confirm_yes = yes
+	confirm_no = no
+	mode = "confirm"
+	items = [{"label": t("yes")}, {"label": t("no")}]
+	sel = 1
+	draw_ui()
+
+
+func _confirm(yes: bool) -> void:
+	if yes:
+		confirm_yes.call()
+	else:
+		confirm_no.call()
+
+
+func open_pause() -> void:
+	audio.music_player.stream_paused = true
+	set_menu("pause", [
+		{"label": t("resume"), "act": resume},
+		{"label": t("restart"), "act": _pause_restart},
+		{"label": t("levels"), "act": func(): open_levels("pause")},
+		{"label": t("options"), "act": func(): open_options("pause")},
+		{"label": t("controls"), "act": func(): open_controls("pause")},
+		{"label": t("to_menu"), "act": _pause_to_menu},
+	])
+
+
+func _pause_restart() -> void:
+	resume()
+	latched["restart"] = true
+
+
+func _pause_to_menu() -> void:
+	save_all()
+	open_title()
+
+
+func resume() -> void:
+	mode = "play"
+	audio.music_player.stream_paused = false
+	audio.play_music()
+	base_mat.set_shader_parameter("dim", 1.0)
+	text.clear()
+	text.update_texture()
+	acc = 0.0
+	latched.clear()
+
+
+func open_options(from: String) -> void:
+	if mode != "options":
+		back_to = from
+		page = 0
+	var keys: Array = OPTION_PAGES.keys()
+	var its := []
+	its.append({"label": t(keys[page]), "kind": "tab",
+		"left": func(): _option_page(-1), "right": func(): _option_page(1),
+		"act": func(): _option_page(1)})
+	for k in OPTION_PAGES[keys[page]]:
+		var opt: String = k
+		its.append({"label": t("o_" + opt), "value": _option_label(opt),
+			"left": func(): _change_option(opt, -1), "right": func(): _change_option(opt, 1),
+			"act": func(): _change_option(opt, 1),
+			"enabled": not (opt in ["music_on", "music", "fx", "overlap"] and not settings.get_value("sound"))
+					and not (opt == "fullscreen" and OS.has_feature("web"))})
+	if keys[page] == "page_controls":
+		its.append({"label": t("open_controls"), "act": func(): open_controls("options")})
+	its.append({"label": t("back"), "act": _back})
+	set_menu("options", its, sel if mode == "options" else 0)
+
+
+func _option_page(step: int) -> void:
+	page = (page + step + OPTION_PAGES.size()) % OPTION_PAGES.size()
+	sel = 0
+	open_options(back_to)
+
+
+func _option_label(k: String) -> String:
+	var v = settings.get_value(k)
+	if v is bool:
+		return t("yes") if v else t("no")
+	if v is int or v is float:
+		return str(v)
+	match k:
+		"language":
+			return "polski" if v == "pl" else "english"
+		"push", "overlap":
+			return t("v_" + v)
+		"after":
+			return t("v_next") if v == "next" else t("v_unsolved")
+		"scale":
+			return t("v_" + v)
+		"colours":
+			return t("v_" + v)
+	return S.glyph_text(str(v))
+
+
+func _change_option(k: String, step: int) -> void:
+	settings.cycle(k, step)
+	apply_settings()
+	settings.save_file()
+	open_options(back_to)
+
+
+func open_controls(from: String) -> void:
+	if mode != "controls" and mode != "rebind":
+		back_to = from if from != "options" else back_to
+		page = 0
+	var tabs := ["tab_keys", "tab_pad", "tab_touch"]
+	var its := [{"label": t(tabs[page]), "kind": "tab",
+		"left": func(): _controls_tab(-1), "right": func(): _controls_tab(1),
+		"act": func(): _controls_tab(1)}]
+	if page == 0 or page == 1:
+		var dev := "keys" if page == 0 else "pad"
+		for a in Settings.ACTIONS:
+			var act: String = a
+			var codes: Array = settings.keys.get(act, []) if dev == "keys" else settings.pad.get(act, [])
+			var names := []
+			for c in codes:
+				names.append(Settings.key_name(c) if dev == "keys" else Settings.pad_name(c))
+			its.append({"label": t("a_" + act), "value": S.glyph_text("  ".join(names)),
+				"act": func(): _start_rebind(act)})
+		if page == 1:
+			its.append({"label": t("o_gamepad"), "value": _option_label("gamepad"),
+				"left": func(): _change_control("gamepad", -1), "right": func(): _change_control("gamepad", 1),
+				"act": func(): _change_control("gamepad", 1)})
+			its.append({"label": t("deadzone"), "value": _option_label("deadzone"),
+				"left": func(): _change_control("deadzone", -1), "right": func(): _change_control("deadzone", 1),
+				"act": func(): _change_control("deadzone", 1)})
+			its.append({"label": t("vibration"), "value": _option_label("vibration"),
+				"left": func(): _change_control("vibration", -1), "right": func(): _change_control("vibration", 1),
+				"act": func(): _change_control("vibration", 1)})
+		its.append({"label": t("defaults"), "act": func(): open_confirm(t("defaults_q"),
+				_controls_defaults, _controls_back)})
+	else:
+		for k in ["touch", "touch_size", "touch_alpha", "touch_hand"]:
+			var opt: String = k
+			its.append({"label": t({"touch": "touch_on", "touch_size": "touch_size",
+					"touch_alpha": "touch_alpha", "touch_hand": "touch_hand"}[opt]),
+				"value": _touch_label(opt),
+				"left": func(): _change_control(opt, -1), "right": func(): _change_control(opt, 1),
+				"act": func(): _change_control(opt, 1)})
+	its.append({"label": t("back"), "act": _back})
+	var keep := sel if mode in ["controls", "rebind"] else 0
+	set_menu("controls", its, keep)
+
+
+func _controls_defaults() -> void:
+	if page == 0:
+		settings.reset_keys()
+	else:
+		settings.reset_pad()
+	apply_settings()
+	settings.save_file()
+	_controls_back()
+
+
+func _controls_back() -> void:
+	mode = "controls"
+	open_controls(back_to)
+
+
+func _touch_label(k: String) -> String:
+	var v = settings.get_value(k)
+	match k:
+		"touch":
+			return {"auto": t("v_auto"), "on": t("yes"), "off": t("no")}[v]
+		"touch_size":
+			return t("v_" + v)
+		"touch_hand":
+			return t("v_right_hand") if v == "right" else t("v_left_hand")
+	return str(v)
+
+
+func _controls_tab(step: int) -> void:
+	page = (page + step + 3) % 3
+	sel = 0
+	open_controls(back_to)
+
+
+func _change_control(k: String, step: int) -> void:
+	settings.cycle(k, step)
+	apply_settings()
+	settings.save_file()
+	open_controls(back_to)
+
+
+func _start_rebind(a: String) -> void:
+	rebind_action = a
+	mode = "rebind"
+	draw_ui()
+
+
+func _rebind_key(e: InputEventKey) -> void:
+	if page != 0:
+		return
+	if e.physical_keycode == KEY_ESCAPE:
+		mode = "controls"
+		open_controls(back_to)
+		return
+	_finish_rebind("keys", e.physical_keycode)
+
+
+func _rebind_pad(e: InputEventJoypadButton) -> void:
+	if page != 1:
+		return
+	if e.button_index == JOY_BUTTON_B:
+		mode = "controls"
+		open_controls(back_to)
+		return
+	_finish_rebind("pad", e.button_index)
+
+
+func _finish_rebind(dev: String, code: int) -> void:
+	var other := settings.bind(dev, rebind_action, code)
+	if other != "":
+		notice = t("swapped") + " " + t("a_" + other)
+		notice_t = 2.0
+	apply_settings()
+	settings.save_file()
+	mode = "controls"
+	open_controls(back_to)
+
+
+func open_levels(from: String) -> void:
+	back_to = from
+	mode = "levels"
+	sel = level if sim != null else progress.level(set_id)
+	page = sel / 12
+	items = []
+	draw_ui()
+
+
+func _levels_ui(a: String) -> void:
+	var n := Data.levels.size()
+	match a:
+		"ui_left":
+			sel = maxi(sel - 1, 0)
+		"ui_right":
+			sel = mini(sel + 1, n - 1)
+		"ui_up":
+			sel = maxi(sel - 4, 0)
+		"ui_down":
+			sel = mini(sel + 4, n - 1)
+		"ui_accept":
+			start_game(sel)
+			return
+		"ui_cancel":
+			_back()
+			return
+	page = sel / 12
+	audio.play("key")
+	draw_ui()
+
+
+func open_player() -> void:
+	var its := []
+	for i in 3:
+		var idx := i
+		var p: Dictionary = progress.players[i]
+		var n := 0
+		if p["sets"].has(set_id):
+			n = p["sets"][set_id]["solved"].size()
+		its.append({"label": S.glyph_text(p["name"]), "value": "%d %s" % [n, t("solved")],
+			"act": _select_player.bind(idx), "current": i == progress.current})
+	its.append({"label": t("rename"), "act": _start_rename})
+	its.append({"label": t("reset"), "act": func(): open_confirm(t("defaults_q"), _reset_player, open_player)})
+	its.append({"label": t("back"), "act": _back})
+	back_to = "title"
+	set_menu("player", its, sel if mode == "player" else progress.current)
+
+
+func _select_player(i: int) -> void:
+	progress.current = i
+	progress.save_file()
+	open_player()
+
+
+func _start_rename() -> void:
+	name_edit = progress.player()["name"]
+	mode = "rename"
+	draw_ui()
+
+
+func _reset_player() -> void:
+	progress.reset_progress(set_id)
+	progress.save_file()
+	open_player()
+
+
+func _rename_input(event: InputEvent) -> void:
+	var chars := Progress.NAME_CHARS
+	if event is InputEventKey and event.pressed:
+		match event.physical_keycode:
+			KEY_ENTER, KEY_KP_ENTER:
+				_rename_done(true)
+				return
+			KEY_ESCAPE:
+				_rename_done(false)
+				return
+			KEY_BACKSPACE:
+				name_edit = name_edit.left(name_edit.length() - 1)
+				draw_ui()
+				return
+		var c := char(event.unicode).to_lower() if event.unicode > 0 else ""
+		if c != "" and chars.contains(c) and name_edit.length() < Progress.NAME_LEN:
+			name_edit += c
+			draw_ui()
+		return
+	# gamepad / touch: up/down change the last letter, right adds one, left deletes, A accepts
+	if event.is_action_pressed("ui_accept"):
+		_rename_done(true)
+	elif event.is_action_pressed("ui_cancel"):
+		_rename_done(false)
+	elif event.is_action_pressed("ui_up", true) or event.is_action_pressed("ui_down", true):
+		if name_edit == "":
+			name_edit = "a"
+		var last := name_edit[name_edit.length() - 1]
+		var i := chars.find(last)
+		i = (i + (1 if event.is_action_pressed("ui_down", true) else -1) + chars.length()) % chars.length()
+		name_edit = name_edit.left(name_edit.length() - 1) + chars[i]
+		draw_ui()
+	elif event.is_action_pressed("ui_right", true) and name_edit.length() < Progress.NAME_LEN:
+		name_edit += "a"
+		draw_ui()
+	elif event.is_action_pressed("ui_left", true):
+		name_edit = name_edit.left(name_edit.length() - 1)
+		draw_ui()
+	elif event is InputEventScreenTouch and event.pressed:
+		_rename_done(true)
+
+
+func _rename_done(ok: bool) -> void:
+	if ok:
+		progress.rename(name_edit)
+		progress.save_file()
+	mode = "player"
+	open_player()
+
+
+func open_credits() -> void:
+	mode = "credits"
+	items = []
+	credits_t = 0.0
+	draw_ui()
+
+
+# drawing the menu screens ------------------------------------------------------------------
+func draw_ui() -> void:
+	text.clear()
+	rows = []
+	match mode:
+		"first":
+			_draw_base_logo(56)
+			text.text_centered(t("press_key"), 40, TextLayer.BLUE)
+			for i in items.size():
+				_row(i, (640 - 160) / 2, 64 + i * 14, 160, false)
+			if _portrait():
+				text.text_centered(t("turn_phone"), 380, TextLayer.GREEN)
+		"title":
+			_draw_title_base()
+			for i in items.size():
+				var col := i / 5
+				_row(i, 32 + col * 304, 4 + (i % 5) * 15, 288, false)
+		"pause":
+			base_mat.set_shader_parameter("dim", 0.35)
+			_panel(t("paused"))
+		"confirm":
+			text.fill(Rect2i(0, 150, 640, 70), 0)
+			text.text_centered(confirm_text, 160, TextLayer.YELLOW)
+			for i in 2:
+				_row(i, 200 + i * 140, 190, 100, false)
+		"options":
+			_clear_base()
+			_draw_list(t("options"))
+		"controls", "rebind":
+			_clear_base()
+			_draw_list(t("controls"))
+			if mode == "rebind":
+				text.fill(Rect2i(0, 170, 640, 50), 0)
+				text.text_centered(t("press_new") + " " + t("a_" + rebind_action), 180, TextLayer.YELLOW)
+				text.text_centered(t("esc_cancel"), 196, TextLayer.BLUE)
+		"player":
+			_clear_base()
+			_draw_list(t("players"))
+		"rename":
+			_clear_base()
+			text.text_centered(t("rename"), 120, TextLayer.YELLOW)
+			text.text_centered(S.glyph_text(name_edit) + "I", 160, TextLayer.GREEN)
+		"levels":
+			_clear_base()
+			_draw_levels()
+		"credits":
+			_clear_base()
+			_draw_credits()
+		"bye":
+			_clear_base()
+			text.text_centered(t("quit_web"), 196, TextLayer.YELLOW)
+	if notice != "" and notice_t > 0.0:
+		text.fill(Rect2i(0, 380, 640, 12), 0)
+		text.text_centered(notice, 382, TextLayer.YELLOW)
+	text.update_texture()
+
+
+func _row(i: int, x: int, y: int, w: int, with_value := true) -> void:
+	var it: Dictionary = items[i]
+	var enabled := _enabled(i)
+	var colour := TextLayer.YELLOW if i == sel else (TextLayer.GREEN if enabled else TextLayer.BLUE)
+	if not enabled and i != sel:
+		colour = TextLayer.BLUE
+	var label: String = it["label"]
+	if it.get("current", false):
+		label = label + " :"
+	text.text(label, x, y, colour)
+	if with_value and it.has("value"):
+		text.text(it["value"], x + 320, y, TextLayer.YELLOW if i == sel else TextLayer.BLUE)
+	rows.append(Rect2i(x - 8, y - 3, w, 14))
+
+
+func _draw_list(title: String) -> void:
+	text.text_centered(title, 12, TextLayer.YELLOW)
+	var y := 40
+	for i in items.size():
+		var it: Dictionary = items[i]
+		if it.get("kind", "") == "tab":
+			text.text_centered(it["label"], y, TextLayer.YELLOW if i == sel else TextLayer.GREEN)
+			rows.append(Rect2i(0, y - 3, 640, 14))
+			y += 24
+			continue
+		_row(i, 40, y, 560)
+		y += 15 if items.size() < 18 else 13
+
+
+func _panel(title: String) -> void:
+	var h := items.size() * 15 + 40
+	var top := (400 - h) / 2
+	text.fill(Rect2i(160, top, 320, h), 0)
+	text.frame(Rect2i(160, top, 320, h), 162)
+	text.text_centered(title, top + 10, TextLayer.YELLOW)
+	for i in items.size():
+		_row(i, 200, top + 30 + i * 15, 240, false)
+
+
+func _draw_levels() -> void:
+	var n := Data.levels.size()
+	var pages := (n + 11) / 12
+	text.text_centered("%s %d %s %d  %d %s" % [t("levels"), page + 1, ":", pages,
+			progress.solved(set_id).size(), t("solved")], 4, TextLayer.YELLOW)
+	for k in 12:
+		var i := page * 12 + k
+		if i >= n:
+			break
+		var x := 0 + (k % 4) * 160
+		var y := 22 + (k / 4) * 124
+		var s := Sim.new(Data.levels[i]["rows"], i, Rand.new(1))
+		text.mini_level(s, x, y + 12)
+		text.text("%d" % (i + 1), x + 4, y, TextLayer.YELLOW if i == sel else TextLayer.GREEN)
+		if progress.is_solved(set_id, i):
+			text.glyph(screen.glyph_index(")"), 2, x + 52, y, false)      # the original's mark
+		var hearts := str(s.hearts_total)
+		text.glyph(screen.glyph_index("("), 0, x + 156 - 16 * (hearts.length() + 1), y, false)
+		text.text(hearts, x + 156 - 16 * hearts.length(), y, TextLayer.BLUE)
+		if i == sel:
+			text.frame(Rect2i(x, y + 11, 160, 98), 195)
+			text.frame(Rect2i(x + 1, y + 12, 158, 96), 195)
+		rows.append(Rect2i(x, y, 160, 110))
+	var author: String = Data.levels[sel]["author"]
+	text.text_centered(S.glyph_text(t("author") + " " + author), 388, TextLayer.BLUE)
+
+
+func _draw_credits() -> void:
+	var y := 8
+	for line in [["credits_title", 0], ["", 0], ["c_original", 1], ["c_prog", 2], ["c_pelc", 0],
+			["c_support", 2], ["c_support_names", 1], ["c_support_names2", 1], ["c_levels", 2],
+			["c_level_names1", 1], ["c_level_names2", 1], ["c_level_names3", 1], ["", 0],
+			["c_pub", 2], ["c_pub2", 2], ["c_cc", 2], ["c_licence", 1], ["", 0], ["c_remake", 0],
+			["c_remake2", 1]]:
+		if line[0] != "":
+			text.text_centered(t(line[0]), y, line[1])
+		y += 15 if line[0] != "" else 8
+	_draw_base_logo(-200)
+
+
+func _clear_base() -> void:
+	screen.clear()
+	screen.update_texture()
+	base_mat.set_shader_parameter("dim", 1.0)
+
+
+func _draw_base_logo(y: int) -> void:
+	screen.clear()
+	if y > -120:
+		screen.picture(screen.logo, 64, y)
+	screen.update_texture()
+
+
+func _draw_title_base() -> void:
+	"""the original title screen: bar at y 40, logo at (64, 56), bar at the bottom with the
+	current player's name (the credit lines of the original are on the AUTORZY screen)"""
+	screen.clear()
+	for x in range(0, 320, 16):
+		screen.glyph(screen.glyph_index(")"), 0, x, 40)
+		screen.glyph(screen.glyph_index(")"), 0, x, 192)
+	screen.picture(screen.logo, 64, 56)
+	var name := S.glyph_text(progress.player()["name"])
+	for i in name.length():
+		if name[i] != " ":
+			screen.glyph(screen.glyph_index(name[i]), 1, 320 - (name.length() - i) * 16, 192)
+	screen.update_texture()
+
+
+func _portrait() -> bool:
+	var s := get_viewport_rect().size
+	return s.y > s.x
+
+
+# the game ------------------------------------------------------------------------------------
+func start_game(i: int) -> void:
+	mode = "play"
+	text.clear()
+	text.update_texture()
+	base_mat.set_shader_parameter("dim", 1.0)
+	audio.play_music()
+	icons = ICON_TICKS
+	start_level(i)
 
 
 func start_level(i: int) -> void:
 	level = i
 	sim = Sim.new(Data.levels[level]["rows"], level, rand, tick_count)
 	acc = 0.0
+	play_state = "play"
+	overview = settings.get_value("map")
+	undo_stack.clear()
+	progress.set_level(set_id, level)
+	progress.save_file()
 	render()
-
-
-func _input(event: InputEvent) -> void:
-	controls.note(event)
-	if event.is_action_pressed("fullscreen"):
-		var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full
-				else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 func _process(delta: float) -> void:
 	palette.update(delta)
-	match mode:
+	if notice_t > 0.0:
+		notice_t -= delta
+		if notice_t <= 0.0 and mode != "play":
+			draw_ui()
+	if mode != "play":
+		return
+	match play_state:
 		"play":
 			acc += delta
 			var n := 0
-			while acc >= tick_s and mode == "play" and n < 4:
+			while acc >= tick_s and mode == "play" and play_state == "play" and n < 4:
 				acc -= tick_s
 				n += 1
 				game_tick()
 		"fade_out":
 			if not palette.busy():
 				sim.setup(Data.levels[level]["rows"])
+				undo_stack.clear()
 				render()
 				palette.fade(1.0, 0.25)
-				mode = "fade_in"
+				play_state = "fade_in"
 		"fade_in":
 			if not palette.busy():
 				acc = 0.0
-				mode = "play"
+				play_state = "play"
 		"slide":
 			slide_t += delta
-			var steps := int(slide_t / RETRACE)
-			var off := mini(320, (steps + 1) * SLIDE_STEP)
+			var off := mini(320, (int(slide_t / RETRACE) + 1) * SLIDE_STEP)
 			_compose_slide(off)
 			if off >= 320:
 				acc = 0.0
-				mode = "play"
+				play_state = "play"
+
+
+func _down(a: String) -> bool:
+	return Input.is_action_pressed(a, true) or latched.get(a, false)
+
+
+func _take(a: String) -> bool:
+	var v: bool = latched.get(a, false)
+	latched.erase(a)
+	return v
 
 
 func game_tick() -> void:
-	# the keys GameTick handles besides the directions
 	if Input.is_action_just_pressed("music"):
-		music_on = not music_on
-		audio.music_on = music_on
-		if music_on:
-			audio.play_music()
-		else:
-			audio.stop_music()
+		settings.set_value("music_on", not settings.get_value("music_on"))
 		_option_toggled()
 	if Input.is_action_just_pressed("sound"):
-		sound_on = not sound_on
-		audio.sound_on = sound_on
-		if not sound_on:
-			audio.stop_all()
-		else:
-			audio.play_music()
+		settings.set_value("sound", not settings.get_value("sound"))
 		_option_toggled()
 	if Input.is_action_just_pressed("gamepad"):
-		gamepad_on = not gamepad_on
+		settings.set_value("gamepad", not settings.get_value("gamepad"))
 		_option_toggled()
 	if Input.is_action_just_pressed("overview"):
 		overview = not overview
-	if Input.is_action_just_pressed("quit"):
-		get_tree().quit()                 # M3: back to the title screen
+	if Input.is_key_pressed(KEY_F10):
+		save_all()
+		open_title()
 		return
-	var mod := controls.down("level_mod")
-	if (mod and controls.take("left")) or controls.take("prev_level"):
+	if _take("undo") and settings.get_value("undo") and not undo_stack.is_empty():
+		sim.restore(undo_stack.pop_back())
+		latched.clear()
+		render()
+		return
+	var mod := Input.is_action_pressed("level_mod")
+	if (mod and _take("left")) or _take("prev_level"):
 		change_level(-1)
 		return
-	if (mod and controls.take("right")) or controls.take("next_level"):
+	if (mod and _take("right")) or _take("next_level"):
 		change_level(1)
 		return
-	var d := 0 if mod else controls.direction()
-	if shots_dir != "" and shot_moves != "":
-		d = {"L": -1, "R": 1, "U": -22, "D": 22}.get(shot_moves[shot_tick % shot_moves.length()], 0)
-	var esc := controls.take("restart")
-	if shots_dir != "" and shot_moves != "" and shot_moves[shot_tick % shot_moves.length()] == "E":
-		esc = true
-	controls.end_tick()
+	# the original's priority when several arrows are held: right > left > down > up
+	var d := 0
+	if not mod:
+		if _down("up"):
+			d = -22
+		if _down("down"):
+			d = 22
+		if _down("left"):
+			d = -1
+		if _down("right"):
+			d = 1
+	var esc := _take("restart")
+	if shot_moves != "":
+		var c := shot_moves[shot_tick % shot_moves.length()]
+		d = {"L": -1, "R": 1, "U": -22, "D": 22}.get(c, 0)
+		esc = c == "E"
+	for a in ["left", "right", "up", "down"]:
+		latched.erase(a)
+	if settings.get_value("undo") and (d != 0 or esc):
+		undo_stack.append(sim.snapshot())
+		if undo_stack.size() > UNDO_LIMIT:
+			undo_stack.pop_front()
+	if settings.get_value("push") == "always" and (d == 1 or d == -1):
+		sim.tick_count |= 1               # every press pushes (the original: odd ticks only)
 	sim.tick(d, esc)
 	tick_count = sim.tick_count
-	for s in sim.sounds:
-		audio.play(s)
-	render()
+	for snd in sim.sounds:
+		audio.play(snd)
 	if icons > 0:
 		icons -= 1
+	render()
 	_shot_hook()
 	if not sim.level_running():
 		if sim.game_state == Sim.NEXT_LEVEL:
-			solved[level] = true
-			change_level(1)
+			progress.mark_solved(set_id, level)
+			progress.save_file()
+			change_level(_next_level_step())
 		elif sim.game_state == Sim.PLAYING:       # the dwarf is gone: restart with a fade
 			palette.fade(0.0, 0.25)
-			mode = "fade_out"
+			play_state = "fade_out"
+
+
+func _next_level_step() -> int:
+	var n := Data.levels.size()
+	if settings.get_value("after") == "unsolved":
+		for k in range(1, n + 1):
+			if not progress.is_solved(set_id, (level + k) % n):
+				return k
+	return 1
 
 
 func _option_toggled() -> void:
+	apply_settings()
+	settings.save_file()
+	if settings.get_value("music_on") and settings.get_value("sound"):
+		audio.play_music()
+	else:
+		audio.stop_music()
 	audio.play("key")
 	icons = ICON_TICKS
 
 
 func change_level(step: int) -> void:
 	slide_from = screen.image.duplicate()
-	slide_dir = step
+	slide_dir = 1 if step > 0 else -1
 	var n := Data.levels.size()
-	start_level((level + step + n) % n)
+	start_level(((level + step) % n + n) % n)
 	slide_t = 0.0
-	mode = "slide"
+	play_state = "slide"
 	_compose_slide(SLIDE_STEP)
 
 
@@ -226,9 +1124,10 @@ func render_into_screen() -> void:
 	else:
 		screen.draw_level(sim)
 	if icons > 0:
-		screen.draw_icons(music_on, sound_on, gamepad_on)
+		screen.draw_icons(settings.get_value("music_on"), settings.get_value("sound"),
+				settings.get_value("gamepad"))
 	screen.draw_status(sim.hearts_total, sim.hearts_total - sim.hearts_left, Data.levels.size(),
-			solved.size(), solved.has(level), level + 1)
+			progress.solved(set_id).size(), progress.is_solved(set_id, level), level + 1)
 
 
 func render() -> void:
@@ -236,13 +1135,43 @@ func render() -> void:
 	screen.update_texture()
 
 
+# screenshots ---------------------------------------------------------------------------------
+func _shot(name: String) -> void:
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(shots_dir.path_join(name + ".png"))
+
+
+func _screens_tour() -> void:
+	"""--shots: every screen once, then a short game"""
+	await get_tree().process_frame
+	open_first()
+	await _shot("01_first")
+	open_title()
+	await _shot("02_title")
+	open_options("title")
+	await _shot("03_options")
+	open_controls("title")
+	await _shot("04_controls")
+	open_levels("title")
+	await _shot("05_levels")
+	open_player()
+	await _shot("06_player")
+	open_credits()
+	await _shot("07_credits")
+	start_game(0)
+	await _shot("08_play")
+	open_pause()
+	await _shot("09_pause")
+	resume()
+	if shot_moves == "":
+		get_tree().quit()
+
+
 func _shot_hook() -> void:
-	if shots_dir == "":
+	if shots_dir == "" or shot_moves == "":
 		return
 	shot_tick += 1
-	if shot_tick in [1, 20, 60]:
-		await RenderingServer.frame_post_draw
-		var img := get_viewport().get_texture().get_image()
-		img.save_png(shots_dir.path_join("play_%03d.png" % shot_tick))
+	if shot_tick in [20, 60]:
+		await _shot("10_play_%03d" % shot_tick)
 	if shot_tick >= 60:
 		get_tree().quit()

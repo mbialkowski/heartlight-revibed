@@ -16,6 +16,7 @@ var music_on := true
 var sound_on := true
 var music_volume := 0.7
 var fx_volume := 1.0
+var overlap_always := false   # option: effects may overlap even with the music on
 
 
 func setup(game: Dictionary) -> void:
@@ -82,7 +83,7 @@ func play(name: String) -> void:
 	if not sound_on or not samples.has(name):
 		return
 	var ch := 0
-	if not music_on:
+	if not music_on or overlap_always:
 		if fx[0].playing and fx_name[0] == name:
 			ch = 0
 		elif fx[1].playing and fx_name[1] == name:

@@ -52,6 +52,7 @@ jobs:
           godot --headless --path remake --script res://tests/check.gd
           godot --headless --path remake --script res://tests/rules.gd
           godot --headless --path remake --script res://tests/golden.gd
+          godot --headless --path remake --script res://tests/scenarios.gd
 
       - name: Rendering matches the original's screenshot pixel for pixel
         run: |

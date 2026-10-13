@@ -8,6 +8,7 @@ var palette: Array = []
 var palette_mono: Array = []
 var levels: Array = []          # [{"rows": [...], "author": ""}]
 var level_error := ""
+var levels_text := ""
 
 
 func _ready() -> void:
@@ -24,6 +25,8 @@ func load_all() -> void:
 
 func load_levels(text: String) -> bool:
 	var r := Levels.parse(text)
+	if not r["levels"].is_empty() and r["error"] == "":
+		levels_text = text
 	level_error = r["error"]
 	if r["levels"].is_empty():
 		return false
