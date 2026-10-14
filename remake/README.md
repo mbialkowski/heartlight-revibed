@@ -48,6 +48,9 @@ EDYTOR POZIOMÓW on the title (or E / gamepad X on a level in WYBÓR POZIOMU).
 
 ## Playing
 
+In the browser: <https://mbialkowski.github.io/heartlight-revibed/> (published from `main` by CI).
+
+
 `godot --path remake` (Godot 4.7.2); `-- --level=N` starts playing level N at once.
 
 Default keys (all remappable in STEROWANIE / CONTROLS):

@@ -11,6 +11,8 @@ let a rock fall on your head.
 
 ## The remake
 
+**▶ Play it in the browser: <https://mbialkowski.github.io/heartlight-revibed/>** (desktop or phone; installable as an app).
+
 [`remake/`](remake/README.md) — Godot 4.7, for desktop (Linux, Windows) and the web (also on
 phones, installable as an app):
 
