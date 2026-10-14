@@ -30,6 +30,34 @@ phones, installable as an app):
 Builds: the *Release* workflow attaches Linux, Windows and web archives to a GitHub release when
 a `v*` tag is pushed; the *Remake* workflow publishes the web build on GitHub Pages from `main`.
 
+## What's new compared to the original
+
+**What stays the same:** the rules and timing (one tick every 112.6 ms, verified tick for tick),
+the 70 levels, the graphics (pixel for pixel, the original palette), the sounds and the music.
+Every change below is either new or an option, and the options default to the original's
+behaviour.
+
+| | the original (DOS, 1994) | the remake |
+|---|---|---|
+| **Where it runs** | DOS (today: DOSBox) | Linux, Windows, any browser; phones and tablets (installable as an app, works offline) |
+| **Screen** | 320×200, full screen | any window size, 4:3 picture kept, sharp or smooth scaling, full screen on/off |
+| **Wide screens** | — | side panels beside the picture: level, author, hearts, solved levels, option icons |
+| **Language** | English texts | Polish (default) and English, chosen on the first start, drawn with the original's font |
+| **Controls** | keyboard, joystick | keyboard and gamepad, both remappable (two keys per action, swap on conflict, reset to defaults); touch controls: pad, restart, undo, map, previous/next level, pause, full screen; size, opacity, left-handed layout |
+| **Menus** | title screen and function keys | title menu, pause menu, options (game, video, sound, controls), controls screen that doubles as help, credits; all usable with keyboard, gamepad, mouse and touch |
+| **Choosing a level** | Space + ←/→ one level at a time | level select: pages of mini-maps with the solved mark, hearts count and author; also by touch |
+| **Players** | three `PLAYERn.STT` slots | three players with names, progress kept per level file; the original's `PLAYERn.STT` can be imported |
+| **Undo** | — | option: step back move by move, even after a death |
+| **Pushing** | only on every other tick | option: push on every press |
+| **After a solved level** | the next level | option: the next *unsolved* level |
+| **Speed** | fixed | option: 100 %, 75 %, 50 % (the rules stay the same, only slower) |
+| **Smooth movement** | objects jump from cell to cell | option: objects slide between cells (display only) |
+| **Map (F1)** | on demand | also as an option at the start of every level, and a touch button |
+| **Colours** | VGA or VGA mono (chosen in SETUP) | the same two, switchable in the options |
+| **Sound** | music on/off (F6), effects on/off (F7) | the same keys plus music and effects volume; option: effects may overlap even with the music on |
+| **Other level files** | replace `LEVELS.HL` by hand | open any `LEVELS.HL` (file dialog, file picker or drag and drop), checked with the original's rules and error messages |
+| **Level editor** | — (edit `LEVELS.HL` in a text editor) | built in: paint with keyboard, mouse, touch or gamepad; test a level and come back; add, duplicate, move and delete levels; undo; saves standard `LEVELS.HL` files that the original game plays |
+
 ## What is here
 
 * [`docs/reverse-engineering/`](docs/reverse-engineering/README.md) — complete write-up of the

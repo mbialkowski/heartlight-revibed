@@ -46,6 +46,8 @@ EDYTOR POZIOMÓW on the title (or E / gamepad X on a level in WYBÓR POZIOMU).
   `user://editor.json`. A saved file was checked in the original game in DOSBox
   ([`tests/editor_file/`](../tests/editor_file/README.md)).
 
+What is new compared to the original game: [the table in the main README](../README.md#whats-new-compared-to-the-original).
+
 ## Playing
 
 In the browser: <https://mbialkowski.github.io/heartlight-revibed/> (published from `main` by CI).
