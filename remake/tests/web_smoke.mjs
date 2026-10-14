@@ -110,6 +110,23 @@ await run("phone", phone, async (page) => {
   await page.screenshot({ path: `${out}/phone_game.png` });
 });
 
+// phone: level select by touch (tap selects, a second tap plays), then back from the pause menu
+await run("phone levels", phone, async (page) => {
+  const at = (tx, ty) => [162 + tx * 520 / 640, ty * 390 / 400];   // text layer -> screen
+  await page.touchscreen.tap(420, 200);           // first screen
+  await sleep(1500);
+  await page.touchscreen.tap(...at(80, 38));      // wybór poziomu
+  await sleep(1500);
+  await page.touchscreen.tap(...at(600, 390));    // następne (next page)
+  await sleep(800);
+  await page.touchscreen.tap(...at(240, 82));     // select level 14
+  await sleep(800);
+  await page.screenshot({ path: `${out}/phone_levels.png` });
+  await page.touchscreen.tap(...at(240, 82));     // play it
+  await sleep(2500);
+  await page.screenshot({ path: `${out}/phone_level14.png` });
+});
+
 await run("portrait", { ...phone, viewport: { width: 390, height: 844 } }, async (page) => {
   await page.touchscreen.tap(195, 150);
   await sleep(1500);

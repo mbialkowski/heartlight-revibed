@@ -69,6 +69,7 @@ const T := {
 		"ed_h11": "pad  a wstaw  lb rb obiekt", "ed_h12": "pad  x pobierz  y testuj  start menu",
 		"import_stt": "wczytaj gracza z oryginału", "stt_done": "wczytano gracza z pliku stt",
 		"stt_bad": "uszkodzony plik gracza",
+		"page_prev": "poprzednie", "page_next": "następne",
 		"o_levels": "plik poziomów", "original_levels": "wróć do oryginalnych poziomów",
 	},
 	"en": {
@@ -136,6 +137,7 @@ const T := {
 		"ed_h11": "pad  a put  lb rb object", "ed_h12": "pad  x pick  y test  start menu",
 		"import_stt": "import an original player", "stt_done": "player imported from the stt file",
 		"stt_bad": "damaged player file",
+		"page_prev": "previous", "page_next": "next",
 		"o_levels": "level file", "original_levels": "back to the original levels",
 	},
 }
