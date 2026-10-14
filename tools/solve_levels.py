@@ -79,12 +79,12 @@ def check(lv, inputs):
 
 
 def solve_one(args):
-    path, n, beams, max_ticks = args
+    path, n, beams, max_ticks, seeds = args
     lv = load(path)[n - 1]
     c = lib()
     out = ctypes.create_string_buffer(8192)
     for beam in beams:
-        for seed in (33, 1, 2):   # 33: no diversity cap; 1, 2: capped buckets, other brick costs
+        for seed in seeds:   # 33, 35: no diversity cap; others: capped buckets, other brick costs
             k = c.solve(grid(lv.rows), lv.index, beam, max_ticks, 0, seed, out)
             if k > 0:
                 sol = out.value.decode()
@@ -100,6 +100,7 @@ def main():
     ap.add_argument('--levels', default='1-70')
     ap.add_argument('--beams', default='5000,50000')
     ap.add_argument('--max-ticks', type=int, default=3000)
+    ap.add_argument('--seeds', default='33,1,2,3,35')
     ap.add_argument('--jobs', type=int, default=os.cpu_count())
     ap.add_argument('--traces', default=os.path.join(HERE, '..', 'remake', 'data', 'golden_traces.json'))
     a = ap.parse_args()
@@ -110,10 +111,11 @@ def main():
     print('C rules match all golden traces', flush=True)
     lo, hi = (int(v) for v in a.levels.split('-')) if '-' in a.levels else (int(a.levels),) * 2
     beams = [int(b) for b in a.beams.split(',')]
+    seeds = [int(v) for v in a.seeds.split(',')]
     result = json.load(open(a.out)) if os.path.exists(a.out) else {'note': __doc__.split('\n\n')[2], 'levels': {}}
     todo = [n for n in range(lo, hi + 1) if str(n) not in result['levels']]
     with ProcessPoolExecutor(a.jobs) as ex:
-        for n, sol, beam in ex.map(solve_one, [(a.levels_hl, n, beams, a.max_ticks) for n in todo]):
+        for n, sol, beam in ex.map(solve_one, [(a.levels_hl, n, beams, a.max_ticks, seeds) for n in todo]):
             if sol:
                 result['levels'][str(n)] = {'inputs': sol, 'ticks': len(sol)}
                 print(f'level {n:2d}: solved in {len(sol)} ticks (beam {beam})', flush=True)

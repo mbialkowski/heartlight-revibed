@@ -336,9 +336,10 @@ static int seen_add(uint64_t k) {
     return 1;
 }
 
+static int bomb_gap;
 static int dist_to(const Sim *s, int want_door, int *reach_hearts) {
     /* BFS from the dwarf over cells he can enter (rocks/bombs/balloons cost more: pushing) */
-    static int dist[N], q[N * 4];
+    static int dist[N], q[N * 4], from[N];
     int hero = -1;
     for (int i = 0; i < N; i++) { dist[i] = 1 << 20; if (s->type[i] == DWARF) hero = i; }
     if (hero < 0) {
@@ -366,15 +367,31 @@ static int dist_to(const Sim *s, int want_door, int *reach_hearts) {
             if (t == DOOR && !want_door) continue;
             if (dist[c] + cost < dist[n]) {
                 dist[n] = dist[c] + cost;
+                from[n] = c;
                 if (qt < N * 4) q[qt++] = n;
             }
         }
     }
+    int target = -1;
     for (int i = 0; i < N; i++) {
         if (want_door ? s->type[i] == DOOR : s->type[i] == HEART) {
-            if (dist[i] < best) best = dist[i];
+            if (dist[i] < best) { best = dist[i]; target = i; }
             if (!want_door && dist[i] < (1 << 20)) (*reach_hearts)++;
         }
+    }
+    /* the best path crosses a brick or plasma: how far is the nearest bomb from that wall */
+    bomb_gap = 0;
+    if (target >= 0 && best < (1 << 20) && bombs) {
+        int wall_gap = 1 << 20;
+        for (int c = target; c != hero; c = from[c]) {
+            if (s->type[c] != BRICK && s->type[c] != PLASMA) continue;
+            for (int b = 0; b < N; b++) {
+                if (s->type[b] != BOMB) continue;
+                int g = abs(b % W - c % W) + abs(b / W - c / W);
+                if (g < wall_gap) wall_gap = g;
+            }
+        }
+        if (wall_gap < (1 << 20)) bomb_gap = wall_gap;
     }
     return best;
 }
@@ -385,11 +402,12 @@ static int score_of(const Sim *s, int noise) {
     if (d < 0) return 1 << 28;
     int unreach = s->hearts_left - rh;
     if (unreach > 0 || d >= (1 << 20)) return -1;       /* a heart or the door is out of reach */
+    int gap = bomb_gap;
     {
         int rh2;                                          /* the door must stay reachable too */
         if (s->hearts_left > 0 && dist_to(s, 1, &rh2) >= (1 << 20)) return -1;
     }
-    return s->hearts_left * 300 + unreach * 200 + d * 4 + noise;
+    return s->hearts_left * 300 + unreach * 200 + d * 4 + gap * 12 + noise;
 }
 
 static int alive(const Sim *s) {
