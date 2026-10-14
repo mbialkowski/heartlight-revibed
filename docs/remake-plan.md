@@ -225,9 +225,10 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 * `scenarios.gd` — menus (navigation with each device), options saved and restored, remapping
   (swap on conflict, reset to defaults, mandatory actions), save/load, undo, level change, custom
   LEVELS.HL errors.
-* `solutions.gd` — recorded solutions for levels (collected while play-testing) must still solve
-  them.
-* `web_smoke.mjs` — the web build boots in headless Chromium and reaches level 1.
+* `solutions.gd` — recorded solutions for the levels must still solve them. They are found by
+  `tools/solve_levels.py` (the rules ported to C — checked against every golden trace — and a beam
+  search) and each is replayed with `hl_sim.py` before it is kept.
+* `web_smoke.mjs` — the web build boots in headless Chromium (desktop, phone sideways and upright, wide screen) and is played by keys and touch; a level file is dropped on it; the editor paints.
 
 ## 9. Milestones
 
