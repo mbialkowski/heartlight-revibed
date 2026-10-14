@@ -1,0 +1,3 @@
+# level files must keep CR LF and ^Z exactly (the original reads them)
+*.HL -text
+*.hl -text

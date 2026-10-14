@@ -1,0 +1,15 @@
+{
+ "sample_rate": 8522.728571428572,
+ "block_samples": 16939,
+ "sequence": "lllljjjkababdedemnmnghgissssttttaaabeeefopopghghmnmnghghscstscstcacbcdceqrqrhhhhjkjkghgisbsbsbstaeaendndncncnnnfsbsjsbskstststsiadadbdbfrqrqhghgopophghistscstscabdeabdfotothhhisssjssskstskstsc.",
+ "note": "each letter plays music/blocks/<letter>.wav; \".\" loops to the start; ingame.wav is the whole loop. Modifiers understood by the player but unused here: \"<\" first half, \">\" second half, \"1\"-\"4\" quarter, \"!\" first 1/16 of the previous block.",
+ "low_memory_substitutions": {
+  "b": "a",
+  "d": "e",
+  "g": "h",
+  "k": "j",
+  "l": "j",
+  "q": "r"
+ },
+ "seconds": 381.6
+}

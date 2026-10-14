@@ -1,0 +1,73 @@
+# Builds the remake for Linux, Windows and the web. On a tag "v*" (git tag v1.0.0 && git push
+# origin v1.0.0) the three archives are attached to a GitHub release; run by hand
+# (workflow_dispatch) they are only uploaded as workflow artifacts.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot and the export templates
+        run: |
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          curl -sSLo godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -sSLo templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j templates.tpz templates/version.txt templates/web_nothreads_release.zip \
+            templates/linux_release.x86_64 templates/windows_release_x86_64.exe -d "$dest"
+          rm godot.zip templates.tpz
+
+      - name: Test
+        run: |
+          godot --headless --path remake --import || true
+          godot --headless --path remake --script res://tests/check.gd
+          godot --headless --path remake --script res://tests/golden.gd
+          godot --headless --path remake --script res://tests/scenarios.gd
+          godot --headless --path remake --script res://tests/solutions.gd
+
+      - name: Export
+        run: |
+          mkdir -p remake/build/web remake/build/linux remake/build/windows && touch remake/build/.gdignore
+          b="$GITHUB_WORKSPACE/remake/build"
+          godot --headless --path remake --export-release Web "$b/web/index.html"
+          godot --headless --path remake --export-release Linux "$b/linux/heartlight.x86_64"
+          godot --headless --path remake --export-release Windows "$b/windows/heartlight.exe"
+          test -s "$b/web/index.wasm" && test -s "$b/linux/heartlight.x86_64" && test -s "$b/windows/heartlight.exe"
+
+      - name: Archives
+        run: |
+          v="${GITHUB_REF_NAME//\//-}"
+          mkdir -p dist
+          for d in linux windows web; do
+            cp LICENSE original/README.TXT remake/build/$d/
+            (cd remake/build/$d && zip -qr "$GITHUB_WORKSPACE/dist/heartlight-revibed-$v-$d.zip" .)
+          done
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heartlight-revibed
+          path: dist/*.zip
+
+      - name: GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

@@ -1,0 +1,382 @@
+[
+ {
+  "offset": "DS:0004",
+  "text": "Borland C++ - Copyright 1991 Borland Intl."
+ },
+ {
+  "offset": "DS:002F",
+  "text": "Divide error\r\nAbnormal program termination\r\n"
+ },
+ {
+  "offset": "DS:0094",
+  "text": "lllljjjkababdedemnmnghgissssttttaaabeeefopopghghmnmnghghscstscstcacbcdceqrqrhhhhjkjkghgisbsbsbstaeaendndncncnnnfsbsjsbskstststsiadadbdbfrqrqhghgopophghistscstscabdeabdfotothhhisssjssskstskstsc."
+ },
+ {
+  "offset": "DS:0156",
+  "text": "player?"
+ },
+ {
+  "offset": "DS:015E",
+  "text": "player?.stt"
+ },
+ {
+  "offset": "DS:016A",
+  "text": "player?.stt"
+ },
+ {
+  "offset": "DS:0178",
+  "text": "Wrong parameter! Please run SETUP."
+ },
+ {
+  "offset": "DS:019B",
+  "text": "levels.hl"
+ },
+ {
+  "offset": "DS:01A5",
+  "text": "config.dta"
+ },
+ {
+  "offset": "DS:01B0",
+  "text": "File CONFIG.DTA not found! Please run SETUP."
+ },
+ {
+  "offset": "DS:01DD",
+  "text": "Cannot write file CONFIG.DTA!"
+ },
+ {
+  "offset": "DS:01FB",
+  "text": "File HL.EXE is damaged! You must reinstall the game."
+ },
+ {
+  "offset": "DS:0230",
+  "text": "Heartlight PC Creative Commons BY-SA 2.5 release 2006\nOriginally published in 1994 by Epic MegaGames and xland\n"
+ },
+ {
+  "offset": "DS:02A0",
+  "text": "font"
+ },
+ {
+  "offset": "DS:02A5",
+  "text": "logo"
+ },
+ {
+  "offset": "DS:02AA",
+  "text": "title"
+ },
+ {
+  "offset": "DS:02B0",
+  "text": "rock"
+ },
+ {
+  "offset": "DS:02B5",
+  "text": "heart0"
+ },
+ {
+  "offset": "DS:02BC",
+  "text": "heart1"
+ },
+ {
+  "offset": "DS:02C3",
+  "text": "heart2"
+ },
+ {
+  "offset": "DS:02CA",
+  "text": "heart3"
+ },
+ {
+  "offset": "DS:02D1",
+  "text": "colect"
+ },
+ {
+  "offset": "DS:02D8",
+  "text": "tunnel"
+ },
+ {
+  "offset": "DS:02DF",
+  "text": "colected"
+ },
+ {
+  "offset": "DS:02E8",
+  "text": "expl"
+ },
+ {
+  "offset": "DS:02ED",
+  "text": "door"
+ },
+ {
+  "offset": "DS:02F2",
+  "text": "key"
+ },
+ {
+  "offset": "DS:02F6",
+  "text": "hrtgrass"
+ },
+ {
+  "offset": "DS:02FF",
+  "text": "rocgrass"
+ },
+ {
+  "offset": "DS:0308",
+  "text": "chaos"
+ },
+ {
+  "offset": "DS:030E",
+  "text": "data"
+ },
+ {
+  "offset": "DS:0313",
+  "text": "volume.vol"
+ },
+ {
+  "offset": "DS:031E",
+  "text": "hl.exe"
+ },
+ {
+  "offset": "DS:0325",
+  "text": "loading.ted"
+ },
+ {
+  "offset": "DS:0331",
+  "text": "Sorry, you don't, have enough free memory to run Heartlight PC. You need\nat least %ldK (%ld bytes) of free main, conventional memory to start.\nPlease see your DOS manual for instructions on freeing up more memory,\nor type HELPME for more information."
+ },
+ {
+  "offset": "DS:042C",
+  "text": "info.txt"
+ },
+ {
+  "offset": "DS:0438",
+  "text": "------------------------\n"
+ },
+ {
+  "offset": "DS:0452",
+  "text": "   %6ld code\n"
+ },
+ {
+  "offset": "DS:0460",
+  "text": "   %6ld sound\n"
+ },
+ {
+  "offset": "DS:046F",
+  "text": "   %6ld data\n"
+ },
+ {
+  "offset": "DS:047D",
+  "text": "   %6ld free\n"
+ },
+ {
+  "offset": "DS:048B",
+  "text": "   %6ld heap\n"
+ },
+ {
+  "offset": "DS:0499",
+  "text": "   %6ld margin %ld\n"
+ },
+ {
+  "offset": "DS:04AD",
+  "text": "-------------------------"
+ },
+ {
+  "offset": "DS:04C7",
+  "text": "At least 80286 CPU required!\n"
+ },
+ {
+  "offset": "DS:04E6",
+  "text": "Heartlight PC Creative Commons BY-SA 2.5 release 2006\nOriginally published in 1994 by Epic MegaGames and xland\n"
+ },
+ {
+  "offset": "DS:0556",
+  "text": "%3d"
+ },
+ {
+  "offset": "DS:055A",
+  "text": "%-12s"
+ },
+ {
+  "offset": "DS:0560",
+  "text": "%-3d"
+ },
+ {
+  "offset": "DS:0565",
+  "text": "Can't read file '%s'!"
+ },
+ {
+  "offset": "DS:057B",
+  "text": "Not enough lines in level #%i!"
+ },
+ {
+  "offset": "DS:059A",
+  "text": "Too many lines in level #%i!"
+ },
+ {
+  "offset": "DS:05B7",
+  "text": "No hero on level #%i!"
+ },
+ {
+  "offset": "DS:05CD",
+  "text": "No exit on level #%i!"
+ },
+ {
+  "offset": "DS:05E3",
+  "text": "Invalid object on level #%i!"
+ },
+ {
+  "offset": "DS:0600",
+  "text": "Too many levels defined (max=%i)!"
+ },
+ {
+  "offset": "DS:0622",
+  "text": "Not enough memory for levels!"
+ },
+ {
+  "offset": "DS:0640",
+  "text": "--  %s\nAnalysis stopped in line #%i."
+ },
+ {
+  "offset": "DS:0665",
+  "text": "No levels in file '%s'!"
+ },
+ {
+  "offset": "DS:0686",
+  "text": "%3d(%-3d "
+ },
+ {
+  "offset": "DS:0690",
+  "text": "%3d)%-3d "
+ },
+ {
+  "offset": "DS:069A",
+  "text": "%3d "
+ },
+ {
+  "offset": "DS:06E2",
+  "text": "M!abcdefghijklmnopqrstuvwxyz1234567890.<*"
+ },
+ {
+  "offset": "DS:0738",
+  "text": "Gprogrammed"
+ },
+ {
+  "offset": "DS:0744",
+  "text": "Ggraphics and music"
+ },
+ {
+  "offset": "DS:0758",
+  "text": "Yby janusz pelc"
+ },
+ {
+  "offset": "DS:0768",
+  "text": "Ysupport:"
+ },
+ {
+  "offset": "DS:0772",
+  "text": "Bmaciej miAsik"
+ },
+ {
+  "offset": "DS:0781",
+  "text": "BpaweL wyrzycki"
+ },
+ {
+  "offset": "DS:0791",
+  "text": "Bmarek kubowicz"
+ },
+ {
+  "offset": "DS:07A1",
+  "text": "Bcreative commons"
+ },
+ {
+  "offset": "DS:07B3",
+  "text": "release 2006"
+ },
+ {
+  "offset": "DS:07C0",
+  "text": "G( Yplayer name  B)"
+ },
+ {
+  "offset": "DS:07D4",
+  "text": "G  1 B*............ Y*..."
+ },
+ {
+  "offset": "DS:07EE",
+  "text": "G  2 B*............ Y*..."
+ },
+ {
+  "offset": "DS:0808",
+  "text": "G  3 B*............ Y*..."
+ },
+ {
+  "offset": "DS:0824",
+  "text": "%-3d"
+ },
+ {
+  "offset": "DS:0829",
+  "text": "                    "
+ },
+ {
+  "offset": "DS:083E",
+  "text": " )     %12s "
+ },
+ {
+  "offset": "DS:084B",
+  "text": "       %12s "
+ },
+ {
+  "offset": "DS:0858",
+  "text": "   press y to quit  "
+ },
+ {
+  "offset": "DS:088C",
+  "text": " $@.*!&0=#%<>"
+ },
+ {
+  "offset": "DS:08D8",
+  "text": ".snd"
+ },
+ {
+  "offset": "DS:08DD",
+  "text": ".snd"
+ },
+ {
+  "offset": "DS:08E2",
+  "text": ".snd"
+ },
+ {
+  "offset": "DS:08E7",
+  "text": ".snd"
+ },
+ {
+  "offset": "DS:0969",
+  "text": " !\"##$%&''()*+,,-./011234566789:;;<=>?@@ABBCCCDDDDEEEEEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+ },
+ {
+  "offset": "DS:0B06",
+  "text": "***???*"
+ },
+ {
+  "offset": "DS:0B22",
+  "text": "??*"
+ },
+ {
+  "offset": "DS:0C40",
+  "text": " ? )?%.?)4?.9?2?"
+ },
+ {
+  "offset": "DS:0C77",
+  "text": "$?$-?-6?6"
+ },
+ {
+  "offset": "DS:0DCC",
+  "text": "/*$7"
+ },
+ {
+  "offset": "DS:0E5C",
+  "text": "M!pic%02d.bmp"
+ },
+ {
+  "offset": "DS:0E7F",
+  "text": ".ggs"
+ },
+ {
+  "offset": "DS:0E84",
+  "text": "_v.bmp"
+ }
+]

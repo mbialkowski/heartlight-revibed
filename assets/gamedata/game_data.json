@@ -1,0 +1,220 @@
+{
+ "source": "HL.EXE 2006 CC release; see docs/reverse-engineering/03-engine.md",
+ "grid": {
+  "width": 22,
+  "height": 14,
+  "level_width": 20,
+  "level_height": 12,
+  "index": "(y + 1) * 22 + (x + 1)",
+  "border": "metal (type 3)"
+ },
+ "timing": {
+  "pit_hz": 8522.728571428572,
+  "pit_ticks_per_game_tick": 960,
+  "game_tick_ms": 112.64,
+  "game_ticks_per_second": 8.878
+ },
+ "types": [
+  {
+   "id": 0,
+   "name": "empty",
+   "char": " ",
+   "initial_state": 0,
+   "sprite_base": 0,
+   "frames": 1
+  },
+  {
+   "id": 1,
+   "name": "explosion",
+   "char": null,
+   "initial_state": null,
+   "sprite_base": 9,
+   "frames": 7
+  },
+  {
+   "id": 2,
+   "name": "brick",
+   "char": "#",
+   "initial_state": 0,
+   "sprite_base": 56,
+   "frames": 4
+  },
+  {
+   "id": 3,
+   "name": "metal",
+   "char": "%",
+   "initial_state": 0,
+   "sprite_base": 60,
+   "frames": 1
+  },
+  {
+   "id": 4,
+   "name": "rock",
+   "char": "@",
+   "initial_state": 2,
+   "sprite_base": 8,
+   "frames": 1
+  },
+  {
+   "id": 5,
+   "name": "heart",
+   "char": "$",
+   "initial_state": 2,
+   "sprite_base": 1,
+   "frames": 6
+  },
+  {
+   "id": 6,
+   "name": "bomb",
+   "char": "&",
+   "initial_state": 2,
+   "sprite_base": 61,
+   "frames": 2
+  },
+  {
+   "id": 7,
+   "name": "grass",
+   "char": ".",
+   "initial_state": 0,
+   "sprite_base": 7,
+   "frames": 1
+  },
+  {
+   "id": 8,
+   "name": "dwarf",
+   "char": "*",
+   "initial_state": 1,
+   "sprite_base": 16,
+   "frames": 8
+  },
+  {
+   "id": 9,
+   "name": "door",
+   "char": "!",
+   "initial_state": 5,
+   "sprite_base": 24,
+   "frames": 4
+  },
+  {
+   "id": 10,
+   "name": "balloon",
+   "char": "0",
+   "initial_state": 2,
+   "sprite_base": 28,
+   "frames": 4
+  },
+  {
+   "id": 11,
+   "name": "plasma",
+   "char": "=",
+   "initial_state": 2,
+   "sprite_base": 32,
+   "frames": 8
+  },
+  {
+   "id": 12,
+   "name": "tunnel_left",
+   "char": "<",
+   "initial_state": 2,
+   "sprite_base": 40,
+   "frames": 8
+  },
+  {
+   "id": 13,
+   "name": "tunnel_right",
+   "char": ">",
+   "initial_state": 2,
+   "sprite_base": 48,
+   "frames": 8
+  }
+ ],
+ "states": {
+  "dwarf": {
+   "1": "alive"
+  },
+  "rock/heart/bomb": {
+   "2": "resting",
+   "3": "falling",
+   "8": "bomb lit"
+  },
+  "door": {
+   "5": "closed",
+   "6": "open"
+  },
+  "balloon": {
+   "2": "resting",
+   "7": "rising"
+  },
+  "tunnel": {
+   "1": "dwarf inside",
+   "2": "idle",
+   "3": "dwarf leaving"
+  }
+ },
+ "dwarf_frames": {
+  "0": "left",
+  "1": "left step",
+  "2": "right",
+  "3": "right step",
+  "4": "dying",
+  "5": "dying",
+  "6": "leaving",
+  "7": "leaving"
+ },
+ "timers": {
+  "death_ticks": 8,
+  "exit_ticks": 16,
+  "hero_idle_ticks": 32,
+  "explosion_frames": 7,
+  "door_opening_ticks": 4,
+  "option_icons_ticks": 48
+ },
+ "input_priority": [
+  "right",
+  "left",
+  "down",
+  "up"
+ ],
+ "keys": {
+  "arrows": "move/push",
+  "space+left/right": "previous/next level",
+  "esc": "die and restart level",
+  "F1": "overview map",
+  "F6": "music",
+  "F7": "sound",
+  "F8": "joystick",
+  "F10": "title screen",
+  "alt+x": "quit to DOS",
+  "alt+ctrl+F12": "screenshot PICnn.BMP"
+ },
+ "sounds": {
+  "rock": "rock lands (not on grass)",
+  "rocgrass": "rock or bomb lands on grass",
+  "heart0": "heart lands (not on grass), one of four at random",
+  "heart1": "heart lands (not on grass), one of four at random",
+  "heart2": "heart lands (not on grass), one of four at random",
+  "heart3": "heart lands (not on grass), one of four at random",
+  "hrtgrass": "heart lands on grass",
+  "colect": "dwarf collects a heart",
+  "colected": "last heart collected: the door starts to open",
+  "door": "dwarf enters the open door",
+  "tunnel": "dwarf enters a tunnel",
+  "expl": "explosion (bomb, or dwarf killed)",
+  "key": "F6/F7/F8 option toggled",
+  "title": "title-screen tune (looped)"
+ },
+ "rolls_off": [
+  "explosion",
+  "brick",
+  "rock",
+  "heart",
+  "plasma",
+  "bomb (unlit)"
+ ],
+ "explosion_spares": [
+  "metal",
+  "tunnel_left",
+  "tunnel_right",
+  "dwarf leaving (frame>=6)"
+ ]
+}

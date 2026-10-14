@@ -1,0 +1,90 @@
+{
+ "format": "8-bit unsigned PCM mono",
+ "sample_rate": 8522.728571428572,
+ "sounds": {
+  "title": {
+   "file": "title.wav",
+   "samples": 16939,
+   "seconds": 1.988,
+   "use": "title-screen tune (looped)"
+  },
+  "colect": {
+   "file": "colect.wav",
+   "samples": 5582,
+   "seconds": 0.655,
+   "use": "dwarf collects a heart"
+  },
+  "colected": {
+   "file": "colected.wav",
+   "samples": 9237,
+   "seconds": 1.084,
+   "use": "last heart collected: the door starts to open"
+  },
+  "door": {
+   "file": "door.wav",
+   "samples": 22763,
+   "seconds": 2.671,
+   "use": "dwarf enters the open door"
+  },
+  "expl": {
+   "file": "expl.wav",
+   "samples": 5505,
+   "seconds": 0.646,
+   "use": "explosion (bomb, or dwarf killed)"
+  },
+  "heart0": {
+   "file": "heart0.wav",
+   "samples": 466,
+   "seconds": 0.055,
+   "use": "heart lands (not on grass), one of four at random"
+  },
+  "heart1": {
+   "file": "heart1.wav",
+   "samples": 466,
+   "seconds": 0.055,
+   "use": "heart lands (not on grass), one of four at random"
+  },
+  "heart2": {
+   "file": "heart2.wav",
+   "samples": 466,
+   "seconds": 0.055,
+   "use": "heart lands (not on grass), one of four at random"
+  },
+  "heart3": {
+   "file": "heart3.wav",
+   "samples": 464,
+   "seconds": 0.054,
+   "use": "heart lands (not on grass), one of four at random"
+  },
+  "rock": {
+   "file": "rock.wav",
+   "samples": 1231,
+   "seconds": 0.144,
+   "use": "rock lands (not on grass)"
+  },
+  "tunnel": {
+   "file": "tunnel.wav",
+   "samples": 11698,
+   "seconds": 1.373,
+   "use": "dwarf enters a tunnel"
+  },
+  "key": {
+   "file": "key.wav",
+   "samples": 393,
+   "seconds": 0.046,
+   "use": "F6/F7/F8 option toggled"
+  },
+  "rocgrass": {
+   "file": "rocgrass.wav",
+   "samples": 307,
+   "seconds": 0.036,
+   "use": "rock or bomb lands on grass"
+  },
+  "hrtgrass": {
+   "file": "hrtgrass.wav",
+   "samples": 203,
+   "seconds": 0.024,
+   "use": "heart lands on grass"
+  }
+ }
+}
