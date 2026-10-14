@@ -55,12 +55,14 @@ jobs:
       - name: Import the project
         run: godot --headless --path remake --import || true
 
-      - name: Godot tests (scripts, rules, golden traces, scenarios)
+      - name: Godot tests (scripts, rules, golden traces, scenarios, level solutions)
         run: |
           godot --headless --path remake --script res://tests/check.gd
           godot --headless --path remake --script res://tests/rules.gd
           godot --headless --path remake --script res://tests/golden.gd
           godot --headless --path remake --script res://tests/scenarios.gd
+          cmp tests/solutions.json remake/tests/data/solutions.json
+          godot --headless --path remake --script res://tests/solutions.gd
 
       - name: Rendering matches the original's screenshot pixel for pixel
         run: |
