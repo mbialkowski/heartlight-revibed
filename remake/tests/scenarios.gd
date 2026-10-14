@@ -40,6 +40,7 @@ func _initialize() -> void:
 	test_players()
 	await test_game()
 	test_levels_menu()
+	test_levels_touch()
 	test_smooth()
 	test_wide()
 	test_level_file()
@@ -426,4 +427,44 @@ func test_stt() -> void:
 			"into the current player")
 	expect(not main.import_player_file(bad) and main.notice == main.t("stt_bad"), "damaged: a message")
 	main.progress.current = 0
+	main.open_title()
+
+
+func tap(text_pos: Vector2) -> void:
+	"""a finger on the screen at a point of the 640x400 text layer"""
+	for pressed in [true, false]:
+		var e := InputEventScreenTouch.new()
+		e.pressed = pressed
+		e.position = main.display_rect.position + text_pos / Vector2(640, 400) * main.display_rect.size
+		main._input(e)
+
+
+func test_levels_touch() -> void:
+	main.open_levels("title")
+	main.sel = 0
+	main.page = 0
+	main.draw_ui()
+	tap(Vector2(160 + 80, 22 + 60))           # level 2 (second picture of the first row)
+	expect(main.mode == "levels" and main.sel == 1, "a tap selects a level")
+	tap(Vector2(160 + 80, 22 + 60))
+	expect(main.mode == "play" and main.level == 1, "a second tap plays it")
+	main.open_levels("title")
+	main.page = 0
+	main.sel = 0
+	main.draw_ui()
+	tap(Vector2(600, 390))
+	expect(main.page == 1 and main.sel == 12, "next page button")
+	tap(Vector2(20, 390))
+	expect(main.page == 0, "previous page button")
+	tap(Vector2(20, 8))
+	expect(main.mode == "title", "back button")
+	main.start_game(4)
+	main.touch._button("next_level")
+	main.game_tick()
+	expect(main.level == 5, "touch: next level button")
+	main.play_state = "play"
+	main.touch._button("prev_level")
+	main.game_tick()
+	expect(main.level == 4, "touch: previous level button")
+	main.play_state = "play"
 	main.open_title()

@@ -66,6 +66,7 @@ var mode := "boot"
 var items := []                     # menu rows: {label, value, enabled, act, left, right}
 var sel := 0
 var rows := []                      # Rect2i per row (text layer coordinates), for mouse and touch
+var level_buttons := {}             # level select: "back", "prev", "next" -> Rect2i (text layer)
 var back_to := "title"              # where options / controls / levels return to
 var page := 0                       # options page, controls tab, level-select page
 var confirm_text := ""
@@ -354,6 +355,9 @@ func _key_shortcut(e: InputEventKey) -> void:
 func _pointer(event: InputEvent) -> void:
 	var pos: Vector2 = event.position
 	var p := to_text_coords(pos)
+	if mode == "levels":
+		_levels_pointer(event, p)
+		return
 	var hit := -1
 	for i in rows.size():
 		if rows[i] is Rect2i and Rect2(rows[i]).has_point(p):
@@ -796,6 +800,54 @@ func _levels_ui(a: String) -> void:
 	draw_ui()
 
 
+func _levels_pointer(event: InputEvent, p: Vector2) -> void:
+	"""level select by mouse and touch: a mouse click plays the level under it (hovering selects
+	it); a tap selects a level, a second tap on it plays it; back and page buttons"""
+	var hit := -1
+	for k in rows.size():
+		if Rect2(rows[k]).has_point(p):
+			hit = page * 12 + k
+	if event is InputEventMouseMotion:
+		if hit >= 0 and hit != sel:
+			sel = hit
+			draw_ui()
+		return
+	if not event.pressed:
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		_back()
+		return
+	for b in level_buttons:
+		if Rect2(level_buttons[b]).has_point(p):
+			match b:
+				"back":
+					_back()
+				"prev":
+					_level_page(-1)
+				"next":
+					_level_page(1)
+			return
+	if hit < 0:
+		return
+	if hit == sel or event is InputEventMouseButton:
+		start_game(hit)
+	else:
+		sel = hit
+		audio.play("key")
+		draw_ui()
+
+
+func _level_page(step: int) -> void:
+	var pages := (Data.levels.size() + 11) / 12
+	var np := clampi(page + step, 0, pages - 1)
+	if np == page:
+		return
+	page = np
+	sel = page * 12
+	audio.play("key")
+	draw_ui()
+
+
 func open_player() -> void:
 	var its := []
 	for i in 3:
@@ -1014,8 +1066,22 @@ func _panel(title: String, x := 160, w := 320) -> void:
 func _draw_levels() -> void:
 	var n := Data.levels.size()
 	var pages := (n + 11) / 12
-	text.text_centered("%s %d %s %d  %d %s" % [t("levels"), page + 1, ":", pages,
-			progress.solved(set_id).size(), t("solved")], 4, TextLayer.YELLOW)
+	# header: back, title, solved count; footer: previous page, page number, next page
+	# (tappable: mobile has no keys)
+	level_buttons.clear()
+	text.text(t("back"), 8, 2, TextLayer.GREEN)
+	level_buttons["back"] = Rect2i(0, 0, 8 + t("back").length() * 16 + 8, 20)
+	text.text_centered(t("levels"), 2, TextLayer.YELLOW)
+	var solved_txt := "%d:%d" % [progress.solved(set_id).size(), n]
+	text.glyph(screen.glyph_index(")"), 2, 632 - (solved_txt.length() + 1) * 16, 2, false)
+	text.text(solved_txt, 632 - solved_txt.length() * 16, 2, TextLayer.BLUE)
+	if pages > 1:
+		text.text(t("page_prev"), 8, 388, TextLayer.GREEN if page > 0 else TextLayer.BLUE)
+		level_buttons["prev"] = Rect2i(0, 380, 8 + t("page_prev").length() * 16 + 16, 20)
+		var nx := 632 - t("page_next").length() * 16
+		text.text(t("page_next"), nx, 388, TextLayer.GREEN if page < pages - 1 else TextLayer.BLUE)
+		level_buttons["next"] = Rect2i(nx - 16, 380, 640 - nx + 16, 20)
+	text.text_centered("%s %d:%d" % [t("page"), page + 1, pages], 388, TextLayer.YELLOW)
 	for k in 12:
 		var i := page * 12 + k
 		if i >= n:
@@ -1035,7 +1101,7 @@ func _draw_levels() -> void:
 			text.frame(Rect2i(x + 1, y + 12, 158, 96), 195)
 		rows.append(Rect2i(x, y, 160, 110))
 	var author: String = Data.levels[sel]["author"]
-	text.text_centered(S.glyph_text(t("author") + " " + author), 388, TextLayer.BLUE)
+	text.text_centered(S.glyph_text("%d  %s %s" % [sel + 1, t("author"), author]), 12, TextLayer.BLUE)
 
 
 func _draw_credits() -> void:
