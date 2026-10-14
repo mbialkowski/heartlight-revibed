@@ -1,6 +1,6 @@
 # Heartlight: Revibed — the Godot 4 remake
 
-Work in progress, following [the plan](../docs/remake-plan.md). **M6 done**: all 70 levels with
+Work in progress, following [the plan](../docs/remake-plan.md). **M7 done — first release**: all 70 levels with
 the original's rules (tick for tick), graphics (pixel for pixel), sounds and music; title, pause,
 options, controls with remapping, level select, three players with saving, credits, Polish and
 English; a web build (installable as an app, PWA) with touch controls for phones, held sideways or
@@ -96,7 +96,7 @@ on a 640x400 layer over the 320x200 screen: the original's glyphs at half size, 
 | `scripts/view/touch.gd` | on-screen pad and buttons (multi-touch) |
 | `scripts/view/palette.gd`, `palette.gdshader` | palette (fades, VGA mono) and sharp-bilinear scaling |
 | `scripts/main.gd` | the screens and the play loop (tick, restart fade, level slide, undo), side panels, level files |
-| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `scenarios.gd` (98 checks: menus, options, remapping, players, saving, undo, level change, smooth movement, side panels, level files, the editor), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, and wide with a dropped level file, opens the editor and paints, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
+| `tests/` | `check.gd` (scripts parse, data present), `rules.gd` (single rules, as `tests/test_sim.py`), `golden.gd` (280 traces, 91 000 ticks: state hash, sounds and grids every tick), `solutions.gd` (recorded solutions of 32 levels, found by `tools/solve_levels.py`, must still finish them; the other levels are play-tested), `scenarios.gd` (103 checks: menus, options, remapping, players, saving, undo, level change, smooth movement, side panels, level files, the editor, PLAYER?.STT import), `web_smoke.mjs` (loads the web build in Chromium as desktop, phone sideways and upright, and wide with a dropped level file, opens the editor and paints, plays by keys and touch, saves screenshots), `render_dump.gd` (renders screens for `tools/compare_render.py`, which compares them with the original's screenshot: 0 differing pixels) |
 
 ## Running the tests
 
@@ -126,3 +126,9 @@ node remake/tests/web_smoke.mjs remake/build/web /tmp/web-shots    # needs playw
 
 The remake's code is MIT. `data/` is converted from Heartlight PC and, like the game, licensed
 under Creative Commons Attribution-ShareAlike 2.5 (credits in the main README).
+
+## Releases
+
+Push a tag `v*` (e.g. `git tag v1.0.0 && git push origin v1.0.0`): `.github/workflows/release.yml`
+tests the project and attaches `heartlight-revibed-<tag>-linux.zip`, `-windows.zip` and `-web.zip`
+to a GitHub release. Locally: presets `Linux`, `Windows` and `Web` in `export_presets.cfg`.

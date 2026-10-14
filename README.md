@@ -23,7 +23,7 @@ phones, installable as an app):
   original's `PLAYER?.STT`.
 * Extras, all optional: wide-screen side panels, smooth movement, undo, slower speed, VGA mono.
 * Other `LEVELS.HL` files and a **level editor** whose files play in the original game.
-* Every level has a recorded solution that CI replays.
+* Recorded solutions for 32 levels (found by a solver running the same rules) are replayed in CI.
 
 Builds: the *Release* workflow attaches Linux, Windows and web archives to a GitHub release when
 a `v*` tag is pushed; the *Remake* workflow publishes the web build on GitHub Pages from `main`.

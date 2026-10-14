@@ -1,6 +1,6 @@
 # Heartlight: Revibed — remake implementation plan
 
-Status: **M0–M6 done** (rules verified against the original; ported to Godot, 280/280 golden
+Status: **M0–M7 done** (first release) (rules verified against the original; ported to Godot, 280/280 golden
 traces; playable on desktop with menus, options, controls and saving; rendering pixel-exact; web build with touch controls for phones; widescreen panels, smooth movement, undo, other level files; level editor whose files play in the original) — see [`remake/`](../remake/README.md). Decisions confirmed (section 10): Godot 4.7, Polish by
 default, original behaviour by default, level editor in the first release. Built on the reverse engineering in
 [`reverse-engineering/`](reverse-engineering/README.md) and modelled on the
@@ -241,7 +241,7 @@ the build script); the in-game tune as the 197-block sequence (gapless, looping)
 | M4 ✓ | web export, CI + Pages, touch controls, phone layout, PWA | playable on a phone |
 | M5 ✓ | extras: widescreen panels, smooth movement, undo, custom LEVELS.HL | options work, tests green |
 | M6 ✓ | level editor: painting, checks, play-test, level list, LEVELS.HL save/load (desktop and web) | a saved file plays in the original in DOSBox |
-| M7 | polish: screenshots, README, solutions collected for all 70 levels | first release |
+| M7 ✓ | polish: screenshots, README, import of `PLAYER?.STT`, release workflow (Linux, Windows, web), recorded solutions | first release; solutions found automatically for 32 levels (replayed in CI), the others (3, 7, 8, 9, 14, 19, 21, 22, 23, 26, 28, 32, 34, 38, 39, 41, 43, 45, 46, 47, 48, 49, 52, 54, 55, 56, 57, 58, 59, 60, 61, 63, 65, 66, 67, 68, 69, 70) are play-tested by hand |
 
 ## 10. Decisions (confirmed)
 
