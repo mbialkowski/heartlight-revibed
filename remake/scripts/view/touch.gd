@@ -1,6 +1,7 @@
 extends Control
 ## On-screen controls for touch screens (plan 4.5 R-C6, 6): a 4-way pad and buttons for restart
-## (the original's Esc), undo (when the option is on), the overview map, pause and full screen.
+## (the original's Esc), undo (when the option is on), the overview map, previous / next level,
+## pause and full screen.
 ## Multi-touch. Landscape: over the picture's sides; portrait: below the picture. Menus are
 ## played by tapping their rows (main.gd).
 
@@ -69,6 +70,14 @@ func relayout() -> void:
 	buttons.append({"action": "pause", "center": Vector2(s * 1.6, top), "r": s})
 	if main.can_fullscreen() and not main.is_fullscreen():
 		buttons.append({"action": "fullscreen", "center": Vector2(win.x - s * 1.6, top), "r": s})
+	# previous / next level: upright in the row under the picture, sideways under pause and
+	# under full screen
+	if main.portrait:
+		buttons.append({"action": "prev_level", "center": Vector2(win.x * 0.5 - s * 1.8, top), "r": s})
+		buttons.append({"action": "next_level", "center": Vector2(win.x * 0.5 + s * 1.8, top), "r": s})
+	else:
+		buttons.append({"action": "prev_level", "center": Vector2(s * 1.6, top + s * 3.2), "r": s})
+		buttons.append({"action": "next_level", "center": Vector2(win.x - s * 1.6, top + s * 3.2), "r": s})
 	queue_redraw()
 
 
@@ -190,6 +199,11 @@ func _icon(a: String, c: Vector2, s: float, col: Color) -> void:
 		"pause":
 			draw_rect(Rect2(c + Vector2(-s * 0.7, -s * 0.8), Vector2(s * 0.45, s * 1.6)), col)
 			draw_rect(Rect2(c + Vector2(s * 0.25, -s * 0.8), Vector2(s * 0.45, s * 1.6)), col)
+		"prev_level", "next_level":
+			var d := -1.0 if a == "prev_level" else 1.0      # a triangle and a bar: |< or >|
+			draw_colored_polygon(PackedVector2Array([c + Vector2(d * s * 0.5, 0),
+					c + Vector2(-d * s * 0.5, -s * 0.6), c + Vector2(-d * s * 0.5, s * 0.6)]), col)
+			draw_rect(Rect2(c + Vector2(s * 0.5 if d > 0 else -s * 0.7, -s * 0.6), Vector2(s * 0.2, s * 1.2)), col)
 		"fullscreen":
 			for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
 				var p: Vector2 = c + corner * s * 0.8

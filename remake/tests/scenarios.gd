@@ -458,3 +458,13 @@ func test_levels_touch() -> void:
 	expect(main.page == 0, "previous page button")
 	tap(Vector2(20, 8))
 	expect(main.mode == "title", "back button")
+	main.start_game(4)
+	main.touch._button("next_level")
+	main.game_tick()
+	expect(main.level == 5, "touch: next level button")
+	main.play_state = "play"
+	main.touch._button("prev_level")
+	main.game_tick()
+	expect(main.level == 4, "touch: previous level button")
+	main.play_state = "play"
+	main.open_title()
