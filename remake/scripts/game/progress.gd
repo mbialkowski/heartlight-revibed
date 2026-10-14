@@ -93,5 +93,46 @@ func rename(name: String) -> void:
 	player()["name"] = n.strip_edges().left(NAME_LEN) if n.strip_edges() != "" else player()["name"]
 
 
+## PLAYER?.STT of the original (docs 2.11): 242 bytes, 0x00-0xEF XOR-ed, checksum at 0xF0.
+## Returns {"name", "level", "solved": [0-based levels]}, or {} for a damaged file.
+static func decode_stt(bytes: PackedByteArray) -> Dictionary:
+	if bytes.size() < 0xF2:
+		return {}
+	var d := bytes.slice(0, 0xF0)
+	var k := 0
+	var c := 0xF5
+	var sum := 1
+	for i in 0xF0:
+		k = (k + c) & 0xFF
+		d[i] = d[i] ^ k
+		c = (c - 2) & 0xFF
+		sum += d[i]
+	if (sum & 0xFFFF) != (bytes[0xF0] | (bytes[0xF1] << 8)):
+		return {}
+	var name := ""
+	for i in 13:
+		if d[i] == 0:
+			break
+		name += char(d[i])
+	var solved := []
+	for i in 199:
+		if d[0x26 + i] == 1:
+			solved.append(i)
+	return {"name": name, "level": d[0x24] | (d[0x25] << 8), "solved": solved}
+
+
+func import_stt(bytes: PackedByteArray, set_id: String, level_count: int) -> bool:
+	"""the original's save into the current player, for the level file being played"""
+	var r := decode_stt(bytes)
+	if r.is_empty():
+		return false
+	rename(r["name"])
+	var e := _entry(set_id)
+	e["solved"] = r["solved"].filter(func(i): return i < level_count)
+	e["level"] = clampi(r["level"], 0, level_count - 1)
+	e["started"] = true
+	return true
+
+
 static func set_id_of(text: String) -> String:
 	return text.md5_text().left(8)

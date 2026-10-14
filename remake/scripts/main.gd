@@ -808,6 +808,7 @@ func open_player() -> void:
 			"act": _select_player.bind(idx), "current": i == progress.current})
 	its.append({"label": t("rename"), "act": _start_rename})
 	its.append({"label": t("reset"), "act": func(): open_confirm(t("defaults_q"), _reset_player, open_player)})
+	its.append({"label": t("import_stt"), "act": pick_levels_file})
 	its.append({"label": t("back"), "act": _back})
 	back_to = "title"
 	set_menu("player", its, sel if mode == "player" else progress.current)
@@ -1462,13 +1463,13 @@ func pick_levels_file() -> void:
 		JavaScriptBridge.eval("window.hlPickFile && window.hlPickFile()", true)
 	elif DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
 		DisplayServer.file_dialog_show("LEVELS.HL", OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS), "",
-				false, DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, PackedStringArray(["*.hl, *.HL", "*"]),
+				false, DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, PackedStringArray(["*.hl, *.HL, *.stt, *.STT", "*"]),
 				_file_chosen)
 	else:
 		var d := FileDialog.new()
 		d.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 		d.access = FileDialog.ACCESS_FILESYSTEM
-		d.filters = PackedStringArray(["*.hl, *.HL"])
+		d.filters = PackedStringArray(["*.hl, *.HL, *.stt, *.STT"])
 		d.file_selected.connect(func(path): _file_chosen(true, PackedStringArray([path]), 0))
 		add_child(d)
 		d.popup_centered_ratio(0.8)
@@ -1485,11 +1486,27 @@ func _files_dropped(files: PackedStringArray) -> void:
 
 
 func _got_file(bytes: PackedByteArray, file_name: String) -> void:
-	"""a chosen or dropped file: into the editor when it is open, else played"""
-	if mode in ["editor", "editor_menu", "editor_help"]:
+	"""a chosen or dropped file: an original PLAYER?.STT is imported, a level file goes into the
+	editor when it is open, else it is played"""
+	if file_name.to_lower().ends_with(".stt"):
+		import_player_file(bytes)
+	elif mode in ["editor", "editor_menu", "editor_help"]:
 		editor_load_file(bytes, file_name)
 	elif mode != "play":
 		load_levels_file(bytes, file_name)
+
+
+func import_player_file(bytes: PackedByteArray) -> bool:
+	var ok := progress.import_stt(bytes, set_id, Data.levels.size())
+	if ok:
+		progress.save_file()
+	notice = t("stt_done") if ok else t("stt_bad")
+	notice_t = 3.0
+	if mode == "player":
+		open_player()
+	elif mode != "play":
+		draw_ui()
+	return ok
 
 
 func _web_setup() -> void:
@@ -1509,7 +1526,7 @@ func _web_setup() -> void:
 		window.hlPickFile = function () {
 			var i = document.createElement('input');
 			i.type = 'file';
-			i.accept = '.hl,.HL,.txt';
+			i.accept = '.hl,.HL,.txt,.stt,.STT';
 			i.onchange = function () { if (i.files.length) window.hlSendFile(i.files[0]); };
 			i.click();
 		};

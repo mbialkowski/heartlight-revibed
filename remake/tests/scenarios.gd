@@ -44,6 +44,7 @@ func _initialize() -> void:
 	test_wide()
 	test_level_file()
 	await test_editor()
+	test_stt()
 	test_settings_file()
 	for f in [Settings.PATH, Progress.PATH, CUSTOM, EDITOR, SAVED]:
 		if FileAccess.file_exists(f):
@@ -131,7 +132,7 @@ func test_controls() -> void:
 
 func test_players() -> void:
 	main.open_player()
-	expect(main.mode == "player" and main.items.size() == 6, "players screen")
+	expect(main.mode == "player" and main.items.size() == 7, "players screen")
 	press("ui_down")
 	press("ui_accept")
 	expect(main.progress.current == 1, "player 2 selected")
@@ -408,3 +409,21 @@ func test_editor() -> void:
 	main._editor_quit()
 	expect(main.mode == "title", "back to the title")
 	await process_frame
+
+
+func test_stt() -> void:
+	var bytes := FileAccess.get_file_as_bytes("res://tests/data/PLAYER1.STT")   # made by HL.EXE
+	var r := Progress.decode_stt(bytes)
+	expect(r.get("name") == "player1" and r.get("level") == 2 and r.get("solved") == [],
+			"an original PLAYER1.STT is read (name, level 3)")
+	var bad := bytes.duplicate()
+	bad[5] ^= 1
+	expect(Progress.decode_stt(bad).is_empty(), "a damaged STT is refused (checksum)")
+	main.progress.current = 1
+	main.open_player()
+	expect(main.import_player_file(bytes), "imported")
+	expect(main.progress.player()["name"] == "player1" and main.progress.level(main.set_id) == 2,
+			"into the current player")
+	expect(not main.import_player_file(bad) and main.notice == main.t("stt_bad"), "damaged: a message")
+	main.progress.current = 0
+	main.open_title()
