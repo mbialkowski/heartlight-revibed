@@ -192,6 +192,8 @@ func test_game() -> void:
 	var pr := Progress.new()
 	pr.load_file()
 	expect(pr.players[0]["sets"].has(main.set_id), "progress written to disk")
+	expect(pr.is_solved(main.set_id, 37) and pr.level(main.set_id) is int,
+			"solved levels read back from disk (JSON numbers are floats)")
 
 
 func test_levels_menu() -> void:

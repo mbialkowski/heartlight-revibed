@@ -30,6 +30,18 @@ func load_file() -> void:
 	if d is Dictionary and d.get("players") is Array and d["players"].size() == 3:
 		players = d["players"]
 		current = clampi(int(d.get("current", 0)), 0, 2)
+		# JSON has only floats: level numbers come back as 3.0, and [3.0].has(3) is false,
+		# so turn them back into ints (solved marks, "next unsolved", the status line icon)
+		for p in players:
+			if not p.get("sets") is Dictionary:
+				p["sets"] = {}
+			for sid in p["sets"]:
+				var e: Dictionary = p["sets"][sid]
+				var solved := []
+				for v in e.get("solved", []):
+					solved.append(int(v))
+				e["solved"] = solved
+				e["level"] = int(e.get("level", 0))
 
 
 func save_file() -> void:

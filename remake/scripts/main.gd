@@ -1091,8 +1091,8 @@ func _draw_levels() -> void:
 		var s := Sim.new(Data.levels[i]["rows"], i, Rand.new(1))
 		text.mini_level(s, x, y + 12)
 		text.text("%d" % (i + 1), x + 4, y, TextLayer.YELLOW if i == sel else TextLayer.GREEN)
-		if progress.is_solved(set_id, i):
-			text.glyph(screen.glyph_index(")"), 2, x + 52, y, false)      # the original's mark
+		if progress.is_solved(set_id, i):    # the original's solved mark, stamped on the map
+			text.glyph2x(screen.glyph_index(")"), 2, x + 160 - 34, y + 12 + 96 - 18)
 		var hearts := str(s.hearts_total)
 		text.glyph(screen.glyph_index("("), 0, x + 156 - 16 * (hearts.length() + 1), y, false)
 		text.text(hearts, x + 156 - 16 * hearts.length(), y, TextLayer.BLUE)
